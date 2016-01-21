@@ -18,11 +18,14 @@ def initfunc(G, node_d, path_d, seq, seqid, seq_weight=1):
     """
     seq = seq.upper()
     assert all(s in ('A','T','C','G') for s in seq)
+
+    max_node_index = max(node_d.itervalues()) + 1
     
     prev = seq[:KMER_SIZE]
     if prev in node_d: s = node_d[prev]
     else:
-        s = max(node_d.itervalues()) + 1
+        s = max_node_index
+        max_node_index += 1
         node_d[prev] = s
     path = [s]
 
@@ -30,7 +33,8 @@ def initfunc(G, node_d, path_d, seq, seqid, seq_weight=1):
         next = seq[i:i+KMER_SIZE]
         if next in node_d: t = node_d[next]
         else:
-            t = max(node_d.itervalues()) + 1
+            t = max_node_index
+            max_node_index += 1
             node_d[next] = t
         if G.has_edge(s, t):
             G[s][t]['weight'] += seq_weight
@@ -42,22 +46,31 @@ def initfunc(G, node_d, path_d, seq, seqid, seq_weight=1):
 
 def untangle_homopolymer_helper(G, path_d, mermap, node):
     """
-    homopolymers longer than KMER size is going to become self-edges with no indication for how long it is
-    look for all of them and find all sizes of them 
+    Homopolymers longer than kmer size will be self-edges with no indication how long it is.
+
+    Instead must look at the paths to figure out how long they are.
+    In the paths they will be:
+
+    [ ....!node, node, node, node, !node, ...., node, node ... ]
+
+    For each occurrence, replace it with the full homopolymer:
+
+    [ ....!node, new_node1, !node .... new_node2 ... ]
+
+    Homopolymers of the same size can use the same node ID (use mermap to find them).
+    G must be updated to reflect the path changes.
     """
     homo_rev_mermap = {}
     for k,path in path_d.iteritems():
         if node in path:
-            homo_sizes = []
             # find the longest stretch of repeated node in path
             i = path.index(node)
             while i < len(path):
                 for j in xrange(i+1, len(path)):
                     if path[j]!=node:
                         assert j-i > 1 # we MUST be looking at homopolymer nodes
-                        homo_sizes.append(j-i)
                         # replace w/ path[i-1] -> new_homopolymer_node -> path[j]
-                        # also update G! by adding path[i-1] -> newnode -> path[j]
+                        # also update G by adding path[i-1] -> newnode -> path[j]
                         # we delete node from G & mermap at the very end
                         newmer = mermap[node] + mermap[node][-1]*(j-i-1)
                         if newmer in homo_rev_mermap:
@@ -66,19 +79,20 @@ def untangle_homopolymer_helper(G, path_d, mermap, node):
                             newnode = max(G.nodes_iter()) + 1
                             homo_rev_mermap[newmer] = newnode
                             mermap[newnode] = newmer
-                        G.add_edge(path[i-1], newnode, weight=G.get_edge_data(path[i-1], node)['weight'])
-                        G.add_edge(newnode, path[j], weight=G.get_edge_data(node, path[j])['weight'])
+                        if i > 0:
+                            G.add_edge(path[i-1], newnode, weight=G.get_edge_data(path[i-1], node)['weight'])
+                        if j < len(path):
+                            G.add_edge(newnode, path[j], weight=G.get_edge_data(node, path[j])['weight'])
                         if DEBUG_FLAG:
                             pdb.set_trace()
                             print k, "old path", path_d[k][i-1:(j*2-i)]
                         path_d[k] = path_d[k][:i] + [newnode] + path_d[k][j:]
+                        path = path_d[k]
                         if DEBUG_FLAG:
                             print k, "new path", path_d[k][i-1:j]
-                        j = i + 1  # need to update where j is so the next homopolyer search starts the right place
                         break
                     elif j == len(path)-1:  # at the end of the path
                         assert j-i+1 > 1
-                        homo_sizes.append(j-i+1)
                         # replace w/ path[i-1] -> new_homopolymer_node
                         newmer = mermap[node] + mermap[node][-1]*(j-i)
                         if newmer in homo_rev_mermap:
@@ -87,16 +101,18 @@ def untangle_homopolymer_helper(G, path_d, mermap, node):
                             newnode = max(G.nodes_iter()) + 1
                             homo_rev_mermap[newmer] = newnode
                             mermap[newnode] = newmer
-                        G.add_edge(path[i-1], newnode, weight=G.get_edge_data(path[i-1], node)['weight'])
+                        if i > 0:
+                            G.add_edge(path[i-1], newnode, weight=G.get_edge_data(path[i-1], node)['weight'])
                         if DEBUG_FLAG:
                             pdb.set_trace()
                             print k, "old path", path_d[k][i-1:]
                         path_d[k] = path_d[k][:i] + [newnode]
+                        path = path_d[k]
                         if DEBUG_FLAG:
                             print k, "new path", path_d[k][i-1:]
                         break
                 try:
-                    i = path.index(node, j+1)
+                    i = path.index(node, i+1)
                 except ValueError:  # we have searched through the whole path and there are no more of this node
                     break
     # now we can safely remove node from mermap & G
