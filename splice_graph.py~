@@ -517,19 +517,24 @@ def find_dangling_sinks(G, path_d, mermap):
     cand_sinks = filter(lambda n: G.out_degree(n)==0 and G.in_degree(n)==1, G.nodes_iter())
     for sink in cand_sinks:
         pred = G.predecessors(sink)[0]
-        for n in G.successors(pred):
-            if n == sink or n not in G: continue
-            if splice_align.node_is_similar(mermap[sink], mermap[n][:len(mermap[sink])]):
-                print "tugging dangling sink", pred, sink, n
-                # sink is just a shortened version of <n>
-                # just update all paths with presence of <sink> to <n>
-                # and safely remove <sink> from G
-                for k in path_d:
-                    if sink in path_d[k]:
-                        assert path_d[k][-1] == sink
-                        path_d[k] = path_d[k][:-1] + [n]
-                del mermap[sink]
-                G.remove_node(sink)
+        if G.out_degree(pred) == 2: # must be pred -> sink and pred -> n
+            a, b = G.successors(pred)
+            n = a if b == sink else b
+            print "tugging dangling sink", pred, sink, n
+            #pdb.set_trace()
+            prefix = mermap[pred][:KMER_SIZE-1]
+            suffix = mermap[pred][KMER_SIZE-1:]
+            extra = mermap[sink][KMER_SIZE-1:]
+            # update path_d
+            for k in path_d:
+                if sink in path_d[k]:
+                    assert path_d[k][-1] == sink
+                    path_d[k] = path_d[k][:-1]
+            # update mermap and remove sink from G
+            mermap[pred] = mermap[pred] + extra
+            mermap[n] = extra[-(KMER_SIZE-1):] + mermap[n][KMER_SIZE-1:]
+            del mermap[sink]
+            G.remove_node(sink)
 
 def sanity_check_reconstruction(path_d, mermap, seqdict):
     for seqid, path in path_d.iteritems():

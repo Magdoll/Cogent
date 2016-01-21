@@ -35,10 +35,11 @@ def run_ncut(G, labels2_map, ncut_map, nodelist):
     print >> sys.stderr, "(subgraph) has {0} nodes. ncut down to {1} partitions in {2} sec.".format(\
         G.number_of_nodes(), len(set(labels2)), time.time()-start_t)
 
-def main(fastq_filename, dist_filename, output_prefix):
+def main(fastq_filename, dist_filename, output_prefix, is_fa=False):
 
+    start_t = time.time()
     # nodelist: dict of seqid --> index
-    seqdict = dict((r.id.split()[0], r) for r in SeqIO.parse(open(fastq_filename),'fastq'))
+    seqdict = dict((r.id.split()[0], r) for r in SeqIO.parse(open(fastq_filename),'fasta' if is_fa else 'fastq'))
     nodelist = seqdict.keys()
     nodelist = dict((x,i) for i,x in enumerate(nodelist))
 
@@ -54,10 +55,14 @@ def main(fastq_filename, dist_filename, output_prefix):
     for g in nx.connected_component_subgraphs(G):
         run_ncut(g, labels2_map, ncut_map, nodelist)
 
+    end_t = time.time()
+
     with open(output_prefix + '.log', 'w') as f:
+        f.write("Partitioning completeed in {0} sec\n".format(end_t-start_t))
         for k,v in labels2_map.iteritems():
             print k,v
             f.write("{0}\t{1}\t{2}\n".format(k, len(v), v))
+
 
 
 # ----- version where there is no pbid (no genome answer)
@@ -99,7 +104,8 @@ if __name__ == "__main__":
     parser.add_argument("fastq_filename")
     parser.add_argument("dist_filename")
     parser.add_argument("output_prefix")
+    parser.add_argument("--is_fa", action="store_true", default=False)
 
     args = parser.parse_args()
 
-    main(args.fastq_filename, args.dist_filename, args.output_prefix)
+    main(args.fastq_filename, args.dist_filename, args.output_prefix, args.is_fa)

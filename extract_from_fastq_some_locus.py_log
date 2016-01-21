@@ -1,0 +1,9 @@
+# IPython log file
+
+touse = [86,130,219,58,75,196]
+from Bio import SeqIO
+f = open('test2.fq', 'w')
+for r in SeqIO.parse(open('test.fq'),'fastq'):
+    if int(r.id.split('.')[1]) in touse: SeqIO.write(r, f, 'fastq')
+    
+f.close()

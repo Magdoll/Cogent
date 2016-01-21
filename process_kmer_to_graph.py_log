@@ -1,0 +1,280 @@
+# IPython log file
+
+import process_kmer as sp
+d = sp.process_kmer('test.fq.kmers')
+sp.plot_proportion_related_vs_unrelated(d, 'test.kmers.out')
+get_ipython().magic(u'ls ')
+get_ipython().magic(u'logstart process_kmer_to_graph.py_log append')
+import networkx as nx
+import numpy  as np
+import process_kmer as sp
+d = sp.process_kmer('test.fq.kmers')
+sp.plot_proportion_related_vs_unrelated(d, 'test.kmers.out')
+d.keys()
+get_ipython().magic(u'ls ')
+get_ipython().magic(u'edit process_kmer')
+reload(sp)
+nodelist, G = sp.make_weighted_graph(d)
+G.number_of_nodes()
+G.number_of_edges()
+for i in xrange(G.number_of_nodes()): G.node[i]['labels'] = [i]
+G.nodes_iter().next()
+for i in G.nodes_iter(): G.node[i]['labels'] = [i]
+labels = np.array(i for i in G.nodes_iter())
+labelsl
+labels
+labels = np.array([i for i in G.nodes_iter()])
+labels
+len(d)
+len(labels)
+labels2 = graph.cut_normalized(labels, G)
+from skimage.future import graph
+labels2 = graph.cut_normalized(labels, G)
+labels
+labels
+labels2
+labels
+labels2
+labels2
+labels
+nodelist[0]
+nodelist[1]
+nodelist[2]
+nodelist[]
+nodelist[6]
+labels2
+labels2[labels2==121]
+labels2[labels2==121]
+labels2==121
+labels[labels2==121]
+nodelist[labels[labels2==121]]
+nodelist[118,121]
+nodelist[118]
+nodelist[121]
+nodelist[134]
+nodelist[205]
+import matplotlib.pyplot as plt
+import networkx as nx
+nodelist = np.array(nodelist)
+nodelist[labels[labels2==121]]
+labels[labels2==121]
+nx.draw_networkx_nodes(G, labels[labels2==121], node_color='r', node_size=500, alpha=.8)
+labels[labels2==121]
+nx.draw_networkx_nodes(G, nodelist=labels[labels2==121], node_color='r', node_size=500, alpha=.8)
+pos=nx.spring_layout(G)
+nx.draw_networkx_nodes(G, pos, nodelist=labels[labels2==121], node_color='r', node_size=500, alpha=.8)
+nx.draw_networkx_nodes(G, pos, nodelist=labels[labels2==121], node_color='r', node_size=500, alpha=.8)
+list(labels[labels2==121])
+nx.draw_networkx_nodes(G, pos, nodelist=list(labels[labels2==121]), node_color='r', node_size=500, alpha=.8)
+labels2
+nx.draw_networkx_nodes(G, pos, nodelist=labels[labels2==0], node_color='b', node_size=500, alpha=.8)
+nx.draw_networkx_nodes(G, pos, nodelist=list(labels[labels2==0]), node_color='b', node_size=500, alpha=.8)
+plt.axis('off')
+plt.savefig('test.png')
+plt.show()
+get_ipython().magic(u'pwd ')
+G.nodes()
+nodelist
+x = list(nodelist)
+x
+from cPickle import *
+from collections import defaultdict
+xx = defaultdict(lambda: [])
+nodelist[0]
+for i,x in enumerate(nodelist):
+    xx[x.split('.')[1]].append(i)
+    
+x
+xx
+xx.values()
+shells = xx.values()
+shells[:10]
+pos = nx.shell_layout(G, shells)
+nx.draw_networkx_nodes(G, pos, nodelist=list(labels[labels2==0]), node_color='b', node_size=500, alpha=.8)
+nx.draw_networkx_nodes(G, pos, nodelist=list(labels[labels2==121]), node_color='r', node_size=500, alpha=.8)
+plt.axis('off')
+plt.savefig('test.png')
+plt.show()
+pos=nx.graphviz_layout(G)
+pos = nx.random_layout(G)
+pos
+pos.keys()
+pos = nx.random_layout(G)
+pos
+nx.draw_networkx_nodes(G, pos, nodelist=list(labels[labels2==0]), node_color='b', node_size=500, alpha=.8)
+nx.draw_networkx_nodes(G, pos, nodelist=list(labels[labels2==121]), node_color='r', node_size=500, alpha=.8)
+plt.axis('off')
+plt.savefig('test.png')
+plt.show()
+plt.clear()
+plt.clf()
+nx.draw_networkx_nodes(G, pos, nodelist=list(labels[labels2==121]), node_color='r', node_size=500, alpha=.8)
+nx.draw_networkx_nodes(G, pos, nodelist=list(labels[labels2==0]), node_color='b', node_size=500, alpha=.8)
+plt.axis('off')
+plt.savefig('test.png')
+plt.show()
+pos
+import random
+random.random
+help(random.random)
+get_ipython().magic(u'ls ')
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.generate_points_in_limit(10, 0, 0.3, 0.3, 10)
+sp.generate_points_in_limit(10, 0, 0.3, 0.3, 1)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.generate_points_in_limit(10, 0, 0.3, 0.3, 1)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.generate_points_in_limit(10, 0, 0.3, 0.3, 1)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.generate_points_in_limit(10, 0, 0.3, 0.3, 1)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.generate_points_in_limit(10, 0, 0.3, 0.3, 1)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.generate_points_in_limit(10, 0, 0.3, 0.3, 1)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.generate_points_in_limit(10, 0, 0.3, 0.3, 1)
+get_ipython().magic(u'edit process_kmer.py')
+import numpy as np
+p = np.random((10,2))
+p = np.random.random((10,2))
+p
+p <= .3
+p[:,0] <= .3
+p[:,0] <= .3 and p[,:] > 0.3
+p[:,0] <= .3 and p[:,1] > 0.3
+p[:,0] <= .3 && p[:,1] > 0.3
+p[:,0] <= .3 & p[:,1] > 0.3
+all(p[:,0] <= .3,p[:,1] > 0.3)
+np.bitwise_and(p[:,0] <= .3,p[:,1] > 0.3)
+p[np.bitwise_and(p[:,0] <= .3,p[:,1] > 0.3)]
+p[np.bitwise_and(p[:,0] <= .3,p[:,1] > 0)]
+p[np.bitwise_and(p[:,0] <= 1,p[:,1] > 0)]
+p[np.bitwise_and(p[:,0] <= .8,p[:,1] > 0)]
+get_ipython().magic(u'edit process_kmer.py')
+p
+p.dim
+p.sie
+p.size
+len(p)
+p
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.generate_points_in_limit(10, 0, 0.3, 0.3, 1)
+get_ipython().magic(u'edit process_kmer.py')
+p[np.bitwise_and(x_min <= p[:,0], p[:,0] <= x_max, y_min <= p[:,1], p[:,1] <= y_max)]
+0 < p[:,0] < 1.
+help(np.bitwise_and)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.generate_points_in_limit(10, 0, 0.3, 0.3, 1)
+labels
+nodelist
+keys
+nodelist[0]
+keys
+xx
+len(xx)
+import matplotlib
+matplotlib.cm.jet
+matplotlib.cm.jet()
+p = matplotlib.cm.jet
+p.N
+p.from_list
+p.from_list()
+help(p.from_list)
+p.from_list('a')
+p.from_list('a','r')
+plt.cm.jet(.3)
+plt.cm.jet(.1)
+plt.cm.jet(.2)
+plt.cm.jet(.4)
+plt.clf()
+get_ipython().magic(u'ls ')
+get_ipython().magic(u'edit process_kmer.py')
+labels2
+np.unique
+np.unique(labels2)
+get_ipython().magic(u'edit process_kmer.py')
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+get_ipython().magic(u'ls ')
+sp.draw_assignment(G, labels, labels2)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.draw_assignment(G, labels, labels2)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.draw_assignment(G, labels, labels2)
+get_ipython().magic(u'edit process_kmer.py')
+pos
+xx
+get_ipython().magic(u'edit process_kmer.py')
+pos
+pos[290
+]
+pos[290,0] = 1
+pos
+pos[290] = array([.1, .2])
+pos[290] = np.array([.1, .2])
+pos
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+assign_pos_by_answer(G, pos, xx)
+get_ipython().magic(u'pdb ')
+assign_pos_by_answer(G, pos, xx)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.assign_pos_by_answer(G, pos, xx)
+pos
+del pos['6']
+del pos[(290,0)]
+get_ipython().magic(u'ls ')
+get_ipython().magic(u'more process_kmer')
+get_ipython().magic(u'more process_kmer.py')
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.draw_assignment(G, pos, labels, labels2)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.draw_assignment(G, pos, labels, labels2)
+get_ipython().magic(u'edit process_kmer.py')
+plt.cm.jet(1)
+plt.cm.jet(2)
+plt.cm.jet(3)
+plt.cm.jet(3)
+reload(sp)
+sp.draw_assignment(G, pos, labels, labels2)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.draw_assignment(G, pos, labels, labels2)
+sp.draw_assignment(G, pos, labels, labels2, xx)
+get_ipython().magic(u'edit process_kmer.py')
+reload(sp)
+sp.draw_assignment(G, pos, labels, labels2, xx)
+xx
+xx_filter = filter(lambda x: len(x) > 3, xx)
+len(xx_filter)
+xx_filter = filter(lambda x: len(xx[x]) > 3, xx)
+len(xx_filter)
+xx2 = dict((k,xx[k]) for k in xx_filter)
+xx2
+get_ipython().magic(u'ls ')
+get_ipython().magic(u'more process_kmer.py ')
+get_ipython().magic(u'edit process_kmer.py')
+G.nodes()
+.s
+get_ipython().magic(u'ls ')
+get_ipython().magic(u'more test.kmers.out')
+get_ipython().magic(u'ls ')
+get_ipython().magic(u'more test.fq')
+get_ipython().magic(u'ls ')
+get_ipython().magic(u'more process_kmer.py')
+get_ipython().magic(u'edit process_kmer.py')
+get_ipython().magic(u'ls ')

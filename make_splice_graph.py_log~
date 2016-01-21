@@ -1,0 +1,5 @@
+# IPython log file
+
+get_ipython().magic(u'logstart make_splice_graph.py_log')
+import networkx as nx
+get_ipython().magic(u'ls ')

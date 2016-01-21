@@ -1,0 +1,24 @@
+# IPython log file
+
+import process_kmer as sp
+d = sp.process_kmer('test3.fq.kmers')
+sp.plot_proportion_related_vs_unrelated(d, 'test3.kmers.out')
+nodelist, G = sp.make_weighted_graph(d)
+## make dict of "locus" -> list of nodes in that locus
+from collections import defaultdict
+xx = defaultdict(lambda: [])
+for i,x in enumerate(nodelist):
+    xx[x.split('.')[1]].append(i)
+    
+import networkx as nx
+pos = nx.random_layout(G)
+sp.assign_pos_by_answer(G, pos, xx)
+## make the initial 1-to-1 labels
+for i in G.nodes_iter(): G.node[i]['labels'] = [i]
+from skimage.future import graph
+import numpy as np
+labels = np.array([i for i in G.nodes_iter()])
+labels2 = graph.cut_normalized(labels, G)
+labels2 = graph.cut_normalized(labels, G)
+sp.assign_pos_by_answer(G, pos, xx)
+sp.draw_assignment(G, pos, labels, labels2, xx, 'test3')

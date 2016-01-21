@@ -1,0 +1,39 @@
+# IPython log file
+import os
+import GFF
+from collections import defaultdict
+good_for = defaultdict(lambda: [])
+reader = GFF.gmapGFFReader('in.trimmed.fa.gff')
+for r in reader:
+    if r.coverage >= 98.: good_for[r.seqid].append(int(r.chr[4:]))
+    
+good_for
+import splice_graph as sp
+N = max(max(v) for v in good_for.itervalues())+1
+prob = sp.make_into_lp_problem(good_for.items(), N)
+prob.solve()
+touse = []
+for v in prob.variables(): 
+    print v.name, "=", v.varValue
+    if v.varValue == 1: touse.append(int(v.name))   
+
+from Bio import SeqIO
+with open('aloha2.fa', 'w') as f:
+    for r in SeqIO.parse(open('aloha.fa'),'fasta'):
+        if int(r.id[4:]) in touse: 
+            f.write(">{0}\n{1}\n".format(r.id, r.seq))
+
+
+cmd = '~/bin/gmapl -D ~/share/gmap_db_new/ -d cuttlefish -f gff3_gene -n 0 aloha2.fa > aloha2.fa.cuttlefish.gff'
+os.system(cmd)
+cmd = '~/bin/gmapl -D ~/share/gmap_db_new/ -d cuttlefish -f gff3_gene -n 0 in.trimmed.fa > in.trimmed.fa.cuttlefish.gff'
+os.system(cmd)
+cmd = "~/bin/gmap_build -D . -d aloha2 aloha2.fa"
+os.system(cmd)
+cmd = '~/bin/gmap -D . -d aloha2 -f gff3_gene -n 0 in.trimmed.fa > in.trimmed.fa.aloha2.gff'
+os.system(cmd)
+
+os.system("gff3_to_collapsed.py aloha2.fa.cuttlefish.gff")
+os.system("gff3_to_collapsed.py in.trimmed.fa.cuttlefish.gff")
+os.system("gff3_to_collapsed.py in.trimmed.fa.aloha2.gff")
+

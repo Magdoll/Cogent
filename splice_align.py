@@ -49,9 +49,9 @@ def node_is_skipping(seq1, seq2, kmer_size):
 def get_consensus_through_pbdagcon(seq1, weight1, seq2, weight2):
     fname = os.tempnam("/tmp") + '.fasta'
     with open(fname, 'w') as f:
-        for i in xrange(weight1):
+        for i in xrange(min(10, weight1)): # max cutoff at 10
             f.write(">test1_{0}\n{1}\n".format(i, seq1))
-        for i in xrange(weight2):
+        for i in xrange(min(10, weight2)): # max cutoff at 10
             f.write(">test2_{0}\n{1}\n".format(i, seq2))
 
     cmd = "ice_pbdagcon.py --maxScore 10 {0} {0}.g_con g_con".format(fname)

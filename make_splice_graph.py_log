@@ -1,0 +1,9 @@
+# IPython log file
+
+from Bio import SeqIO
+import splice_graph as sp
+import networkx as nx
+G = nx.Graph()
+reader = SeqIO.parse(open('a.fa'),'fasta')
+for r in reader: sp.initfunc(G, r.seq.tostring())
+G.edges(data=True)
