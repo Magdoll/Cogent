@@ -39,13 +39,15 @@ def detect_and_replace_cycle(G, path_d, weight_d, mermap, max_node_index, kmer_s
                         G.add_edge(path[i-1], newnode, weight=weight_d[seqid])
                     if j < len(path): # if j=last, then nothing to connect with after
                         G.add_edge(newnode, path[j], weight=weight_d[seqid])
-                    for k in xrange(max(0,i-1), j):
+                    for k in xrange(max(0,i-1), min(j, len(path)-1)):
                         s, t = path[k], path[k+1]
                         G[s][t]['weight'] -= weight_d[seqid]
                     # now we can update the path
                     path_d[seqid] = path[:i] + [newnode] + path[j:]
                     path = path_d[seqid]
 
+
+                    assert sp.stitch_string_from_path(path, mermap) == oldseq
                     break
 
     # clean up zero-weight edges and zero degree nodes

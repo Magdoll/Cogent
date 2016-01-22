@@ -7,6 +7,8 @@ import splice_cycle
 import networkx as nx
 sys.setrecursionlimit(999999)
 
+#sp.DEBUG_FLAG = True
+
 def trim_ends(seq): 
     for i in xrange(len(seq)):
         if str.isupper(seq[i]): break
@@ -41,6 +43,12 @@ homo_nodes = filter(lambda n: G.has_edge(n, n), G.nodes_iter())
 for n in homo_nodes:
     sp.untangle_homopolymer_helper(G, path_d, mermap, n)
 
+
+splice_cycle.detect_and_replace_cycle(G, path_d, seqweights, mermap, max(G.nodes()), sp.KMER_SIZE, debug=True)
+
+visited = {}
+sp.reachability(G, mermap, visited, path_d)
+
 # cycle detection and abort if detected
 #for k,v in path_d.iteritems():
 #    for x in v:
@@ -48,16 +56,12 @@ for n in homo_nodes:
 #            print >> sys.stderr, "CYCLE detected! Abort!"
 #            os.system("touch CYCLE_DETECTED")
 #            sys.exit(-1)
-#iter = nx.simple_cycles(G)
-#for it in iter:
-#    print >> sys.stderr, "CYCLE detected! Abort!"
-#    os.system("touch CYCLE_DETECTED")
-#    sys.exit(-1)
+iter = nx.simple_cycles(G)
+for it in iter:
+    print >> sys.stderr, "CYCLE detected! Abort!"
+    os.system("touch CYCLE_DETECTED")
+    sys.exit(-1)
 
-splice_cycle.detect_and_replace_cycle(G, path_d, seqweights, mermap, max(G.nodes()), sp.KMER_SIZE, debug=True)
-
-visited = {}
-sp.reachability(G, mermap, visited, path_d)
 
 
 nx.write_graphml(G, 'in.0.graphml')
@@ -65,20 +69,32 @@ nx.write_graphml(G, 'in.0.graphml')
 ## sanity check: confirm that all sequences can be reconstructed via the collapsed graph
 ## also check that all nodes are visited
 #for n in G.nodes_iter(): assert n in visited
-#for k,v in path_d.iteritems():
-#    s = sp.stitch_string_from_path(v, mermap)
-#    s2 = seqdict[k].seq.tostring().upper()
-#    assert s.find(s2) >= 0
+for k,v in path_d.iteritems():
+    s = sp.stitch_string_from_path(v, mermap)
+    s2 = seqdict[k].seq.tostring().upper()
+    assert s.find(s2) >= 0
+raw_input("SANITY PASSED")
+
+def path_all_sane(path_d):
+    for k,v in path_d.iteritems():
+        assert len(v) >= 1
 
 while True:
     cur_num_nodes = G.number_of_nodes()
     sp.find_source_bubbles(G, path_d, mermap)
+    path_all_sane(path_d)
     sp.reachability(G, mermap, {}, path_d)
+    path_all_sane(path_d)
     sp.find_bubbles(G, path_d, mermap)
+    path_all_sane(path_d)
     sp.reachability(G, mermap, {}, path_d)
+    path_all_sane(path_d)
     sp.contract_sinks(G, path_d, mermap)
-#    sp.find_dangling_sinks(G, path_d, mermap)
+    path_all_sane(path_d)
+    sp.find_dangling_sinks(G, path_d, mermap)
+    path_all_sane(path_d)
     sp.reachability(G, mermap, {}, path_d)
+    path_all_sane(path_d)
     if G.number_of_nodes() == cur_num_nodes: break
 
 nx.write_graphml(G, 'in.1.graphml')

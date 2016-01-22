@@ -60,15 +60,19 @@ def untangle_homopolymer_helper(G, path_d, mermap, node):
     Homopolymers of the same size can use the same node ID (use mermap to find them).
     G must be updated to reflect the path changes.
     """
+    can_del_node = True
     homo_rev_mermap = {}
     for k,path in path_d.iteritems():
-        if node in path:
+        if node in path and path.count(node) >= 2:
             # find the longest stretch of repeated node in path
             i = path.index(node)
-            while i < len(path):
+            while i < len(path) - 1:
                 for j in xrange(i+1, len(path)):
                     if path[j]!=node:
-                        assert j-i > 1 # we MUST be looking at homopolymer nodes
+                        if j - i == 1: # just a single occurrence, skip over it
+                            can_del_node = False
+                            break
+
                         # replace w/ path[i-1] -> new_homopolymer_node -> path[j]
                         # also update G by adding path[i-1] -> newnode -> path[j]
                         # we delete node from G & mermap at the very end
@@ -115,14 +119,24 @@ def untangle_homopolymer_helper(G, path_d, mermap, node):
                     i = path.index(node, i+1)
                 except ValueError:  # we have searched through the whole path and there are no more of this node
                     break
-    # now we can safely remove node from mermap & G
-    G.remove_node(node)
-    del mermap[node]
+
+    # can only remove the node if it is not used anymore in G
+    if can_del_node:
+        G.remove_node(node)
+        del mermap[node]
 
 def contract_sinks(G, path_d, mermap):
     """
-    contract all cases where ... -> n' -> sink
+    contract all cases where ... -> pred -> sink
     (where n' has only one outgoing to sink, and sink has only one incoming that is n')
+
+    update G to: ... -> new_node where new_node = pred -> sink
+
+    update all paths, which, if contains sink, must be either:
+
+    path = [ ..., pred, sink ] update to [ ..., pred ]
+    or
+    path = [ sink ] update to [ pred ]
     """
     sinks = filter(lambda n: G.out_degree(n)==0, G.nodes_iter())
     for sink in sinks:
@@ -136,8 +150,12 @@ def contract_sinks(G, path_d, mermap):
                 # delete sink from G and path_d and mermap
                 for k in path_d:
                     if sink in path_d[k]:
-                        assert path_d[k][-1] == sink and (len(path_d[k])==1 or path_d[k][-2] == pred)
-                        path_d[k] = path_d[k][:-1]
+                        if len(path_d[k]) == 1:
+                            path_d[k] = [pred]
+                        else:
+                            assert path_d[k][-1] == sink and path_d[k][-2] == pred
+                            path_d[k] = path_d[k][:-1]
+                # now can safely remove sink from G and mermap
                 G.remove_node(sink)
                 del mermap[sink]
 
@@ -621,18 +639,23 @@ def path_match(target_path, match_path):
         return False
 
 import all_simple_paths
-def find_minimal_path_needed_to_explain_pathd(G, path_d, keys):
+def find_minimal_path_needed_to_explain_pathd(G, path_d, keys, max_G_size=50):
     used_path = set()
 
-    sources = filter(lambda n: G.in_degree(n) == 0, G.nodes_iter())
-    sinks = filter(lambda n: G.out_degree(n) == 0, G.nodes_iter())
-    paths = []
-    for src in sources:
-        for sink in sinks:
-            if src == sink: paths += [[src]]
-            else:
-                paths += [p for p in all_simple_paths.all_simple_paths(G, src, sink)]
-            logger.info("number of paths now: {0}".format(len(paths)))
+    if G.number_of_nodes() <= max_G_size:
+        sources = filter(lambda n: G.in_degree(n) == 0, G.nodes_iter())
+        sinks = filter(lambda n: G.out_degree(n) == 0, G.nodes_iter())
+        paths = []
+        for src in sources:
+            for sink in sinks:
+                if src == sink: paths += [[src]]
+                else:
+                    paths += [p for p in all_simple_paths.all_simple_paths(G, src, sink)]
+                logger.info("number of paths now: {0}".format(len(paths)))
+    else:
+        logger.info("Number of nodes exceeds {0}. Not dealing with pathological case now. Just use the paths!".format(max_G_size))
+        paths = path_d.values()
+
     good_for = defaultdict(lambda: [])
     for j,k in enumerate(keys):
         kk = path_d[k]
@@ -643,7 +666,11 @@ def find_minimal_path_needed_to_explain_pathd(G, path_d, keys):
 
     for j,k in enumerate(keys):
         if j not in good_for:
-            logger.warning("missing good_for for {0}".format(k))
+            logger.warning("[BUG] Missing good_for for {0}. Maybe known issue (graph cycles). Use own path.".format(k))
+            i = len(paths)
+            paths.append(path_d[k])
+            good_for[j] = [i]
+            used_path.add(i)
 
     # trim paths down to the used paths
     used_path = list(used_path)
