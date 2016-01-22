@@ -4,8 +4,8 @@ import networkx as nx
 import numpy  as np
 from Bio import SeqIO
 from skimage.future import graph
-from Cogent import process_kmer as pk
-from Cogent import draw_kmer_graphs as drawk
+from settings import process_kmer as pk
+from settings import draw_kmer_graphs as drawk
 
 
 MashDist = namedtuple('MashDist', 'id1 id2 pval sim')

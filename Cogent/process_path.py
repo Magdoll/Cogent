@@ -1,11 +1,11 @@
 import logging
 from collections import defaultdict
 from Cogent import all_simple_paths
+from Cogent.settings import KMER_SIZE
 from pulp import LpProblem, LpMinimize, LpVariable, LpInteger
 
 log = logging.getLogger('Cogent.process_path')
 
-KMER_SIZE = 30
 
 def make_in_same_path(path_d):
     """

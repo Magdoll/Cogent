@@ -1,9 +1,5 @@
-
-from Cogent.process_path import stitch_string_from_path
-
-__author__ = 'etseng@pacb.com'
 import pdb
-
+from Cogent.process_path import stitch_string_from_path
 
 def detect_and_replace_cycle(G, path_d, weight_d, mermap, max_node_index, kmer_size, debug=False):
     """

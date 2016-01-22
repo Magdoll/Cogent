@@ -52,16 +52,16 @@ def run_gmap_for_final_GFFs(gmap_db_path='~/share/gmap_db_new/', species_db='cut
                             input='in.trimmed.fa', output='aloha2'):
     cmd = "gmapl -D {p} -d {sp} -f gff3_gene -n 0 {o}.fa > {o}.fa.{sp}.gff".format(\
         p=gmap_db_path, sp=species_db, o=output)
-    run_external_call()
-    cmd = "gmapl -D {p} -d {sp} -f gff3_gene -n 0 {i} > {i}.gff".formt(\
+    run_external_call(cmd)
+    cmd = "gmapl -D {p} -d {sp} -f gff3_gene -n 0 {i} > {i}.{sp}.gff".format(\
         p=gmap_db_path, sp=species_db, i=input)
     run_external_call(cmd)
     cmd = "gmap_build -D . -d {o} {o}.fa".format(o=output)
     run_external_call(cmd)
     cmd = "gmap -D . -d {o} -f gff3_gene -n 0 {i} > {i}.{o}.gff".format(\
         o=output, i=input)
-    run_external_call()
+    run_external_call(cmd)
 
-    os.system("gff3_to_collapsed.py {o}.fa.{sp}.gff".format(o=output, sp=species_db))
-    os.system("gff3_to_collapsed.py {i}.{sp}.gff".format(i=input, sp=species_db))
-    os.system("gff3_to_collapsed.py {i}.{o}.gff".format(i=input, o=output))
+    run_external_call("gff3_to_collapsed.py {o}.fa.{sp}.gff".format(o=output, sp=species_db))
+    run_external_call("gff3_to_collapsed.py {i}.{sp}.gff".format(i=input, sp=species_db))
+    run_external_call("gff3_to_collapsed.py {i}.{o}.gff".format(i=input, o=output))

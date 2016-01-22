@@ -1,15 +1,12 @@
 import pdb
 import logging
+from Cogent.settings import KMER_SIZE, DEBUG_FLAG
 from Cogent import splice_align
-
 from Cogent.process_path import make_in_same_path, stitch_string_from_path, path_finder
 from Cogent.sanity_checks import sanity_check_is_chain
 
 
 log = logging.getLogger('Cogent.splice_graph')
-
-KMER_SIZE = 30
-DEBUG_FLAG = False
 
 def add_seq_to_graph(G, node_d, path_d, seq, seqid, seq_weight):
     """
