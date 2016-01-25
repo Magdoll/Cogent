@@ -48,12 +48,17 @@ def post_gmap_processing(db_name='aloha', gff_filename='in.trimmed.fa.gff', outp
                 f.write(">{0}\n{1}\n".format(r.id, r.seq))
 
 
-def run_gmap_for_final_GFFs(gmap_db_path='~/share/gmap_db_new/', species_db='cuttlefish',\
+def run_gmap_for_final_GFFs(small_genome=False, gmap_db_path='~/share/gmap_db_new/', species_db='cuttlefish',\
                             input='in.trimmed.fa', output='aloha2'):
-    cmd = "gmapl -D {p} -d {sp} -f gff3_gene -n 0 {o}.fa > {o}.fa.{sp}.gff".format(\
+
+    if small_genome:
+        prog = 'gmap'
+    else:
+        prog = 'gmapl'
+    cmd = prog + " -D {p} -d {sp} -f gff3_gene -n 0 {o}.fa > {o}.fa.{sp}.gff".format(\
         p=gmap_db_path, sp=species_db, o=output)
     run_external_call(cmd)
-    cmd = "gmapl -D {p} -d {sp} -f gff3_gene -n 0 {i} > {i}.{sp}.gff".format(\
+    cmd = prog + " -D {p} -d {sp} -f gff3_gene -n 0 {i} > {i}.{sp}.gff".format(\
         p=gmap_db_path, sp=species_db, i=input)
     run_external_call(cmd)
     cmd = "gmap_build -D . -d {o} {o}.fa".format(o=output)

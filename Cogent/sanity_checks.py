@@ -1,10 +1,21 @@
-from Cogent import splice_align
-from Cogent.process_path import stitch_string_from_path
-
-__author__ = 'etseng@pacb.com'
-
 import sys
 from Bio import SeqIO
+from Cogent import splice_align
+from Cogent.process_path import stitch_string_from_path
+from Cogent.Utils import run_external_call
+
+
+def sanity_check_gmapl_exists():
+    """
+    GMAP version that comes with smrtanalysis 2.3 is old and does not contain gmapl =__=
+    User must install newer version of gmap to get gmapl
+    """
+    try:
+        run_external_call("gmapl --version")
+    except:
+        print >> sys.stderr, "gmapl executable does not exist. You probably have an old version of GMAP." \
+                             "Please install a newer version of GMAP and try again."
+        sys.exit(-1)
 
 def sanity_check_fasta(fasta_filename):
     """

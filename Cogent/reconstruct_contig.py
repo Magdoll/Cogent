@@ -11,7 +11,7 @@ from Cogent import sanity_checks, splice_cycle
 from Cogent import splice_graph as sp
 from Cogent.Utils import trim_ends, run_external_call, run_gmap, post_gmap_processing, run_gmap_for_final_GFFs
 from Cogent.process_path import solve_with_lp_and_reduce, find_minimal_path_needed_to_explain_pathd
-
+from Cogent.sanity_checks import sanity_check_gmapl_exists
 
 
 sys.setrecursionlimit(999999)
@@ -231,8 +231,12 @@ if __name__ == "__main__":
     parser.add_argument("dirname")
     parser.add_argument("-D", "--gmap_db_path", help="GMAP database location (optional)", default='~/share/gmap_db_new')
     parser.add_argument("-d", "--gmap_species", help="GMAP species name (optional)", default='cuttlefish')
+    parser.add_argument("--small_genome", action="store_true", default=False, help="Genome size is smaller than 3GB (use gmap instead of gmapl)")
 
     args = parser.parse_args()
+
+    if not args.small_genome:
+        sanity_check_gmapl_exists()
 
     log = logging.getLogger('Cogent')
     log.setLevel(logging.INFO)
@@ -253,5 +257,5 @@ if __name__ == "__main__":
     os.system("touch COGENT.DONE")
 
     if args.gmap_db_path is not None and args.gmap_species is not None:
-        run_gmap_for_final_GFFs(gmap_db_path=args.gmap_db_path, species_db=args.gmap_species)
+        run_gmap_for_final_GFFs(small_genome=args.small_genome, gmap_db_path=args.gmap_db_path, species_db=args.gmap_species)
 
