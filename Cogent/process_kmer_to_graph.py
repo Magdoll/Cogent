@@ -4,8 +4,8 @@ import networkx as nx
 import numpy  as np
 from Bio import SeqIO
 from skimage.future import graph
-from settings import process_kmer as pk
-from settings import draw_kmer_graphs as drawk
+from Cogent import process_kmer as pk
+#from Cogent import draw_kmer_graphs as drawk  # commenting out for now becuz matplotlib install nasty
 
 
 MashDist = namedtuple('MashDist', 'id1 id2 pval sim')
@@ -96,8 +96,8 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False):
         labels = np.array([i for i in G.nodes_iter()])
         labels2 = np.array([ncut_map[i] for i in G.nodes_iter()])
         pos = nx.random_layout(G)
-        drawk.assign_pos_by_answer(G, pos, gene_answer)
-        drawk.draw_assignment(G, pos, labels, labels2, gene_answer, output_prefix)
+        #drawk.assign_pos_by_answer(G, pos, gene_answer)
+        #drawk.draw_assignment(G, pos, labels, labels2, gene_answer, output_prefix)
 
     nx.write_graphml(G, output_prefix + '.graphml')
 

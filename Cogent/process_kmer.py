@@ -1,8 +1,6 @@
 import sys
-import math
 from collections import namedtuple
 
-import numpy as np
 import networkx as nx
 
 
