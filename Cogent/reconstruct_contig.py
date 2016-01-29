@@ -7,6 +7,7 @@ import logging
 from Bio import SeqIO
 import networkx as nx
 
+from Cogent.__init__ import get_version
 from Cogent import sanity_checks, splice_cycle
 from Cogent import splice_graph as sp
 from Cogent.Utils import trim_ends, run_external_call, run_gmap, post_gmap_processing, run_gmap_for_final_GFFs
@@ -232,6 +233,7 @@ if __name__ == "__main__":
     parser.add_argument("-D", "--gmap_db_path", help="GMAP database location (optional)", default='~/share/gmap_db_new')
     parser.add_argument("-d", "--gmap_species", help="GMAP species name (optional)", default='cuttlefish')
     parser.add_argument("--small_genome", action="store_true", default=False, help="Genome size is smaller than 3GB (use gmap instead of gmapl)")
+    parser.add_argument('--version', action='version', version='%(prog)s ' + str(get_version()))
 
     args = parser.parse_args()
 

@@ -4,6 +4,7 @@ import networkx as nx
 import numpy  as np
 from Bio import SeqIO
 from skimage.future import graph
+from Cogent.__init__ import get_version
 from Cogent import process_kmer as pk
 #from Cogent import draw_kmer_graphs as drawk  # commenting out for now becuz matplotlib install nasty
 
@@ -11,10 +12,10 @@ from Cogent import process_kmer as pk
 MashDist = namedtuple('MashDist', 'id1 id2 pval sim')
 
 
-def run_ncut(G, labels2_map, ncut_map, nodelist):
+def run_ncut(G, labels2_map, ncut_map, nodelist, ncut_threshold):
     start_t = time.time()
     labels = np.array([i for i in G.nodes_iter()])
-    labels2 = graph.cut_normalized(labels, G, thresh=0.2)
+    labels2 = graph.cut_normalized(labels, G, thresh=ncut_threshold)
     for i1, i2 in itertools.izip(labels, labels2):
         labels2_map[i2].append(nodelist[i1])
         ncut_map[i1] = i2
@@ -40,7 +41,7 @@ def write_output_dirs(labels2_map, seqdict, weightdict, output_prefix):
                 f.write("{0}\t{1}\n".format(seqid, weightdict[seqid]))
 
 
-def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False):
+def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False, weight_threshold=0.05, ncut_threshold=0.2):
     '''
     Make a weighted (undirected) graph where each node is a sequence, each edge is k-mer similarity
     Then do normalized cut to find the family partitions
@@ -55,7 +56,7 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False):
     nodelist = seqdict.keys()
     nodelist = dict((x,i) for i,x in enumerate(nodelist))  # seqid --> index
 
-    G = pk.make_weighted_graph_from_mash_dist(nodelist, dist_filename, threshold=0.05)
+    G = pk.make_weighted_graph_from_mash_dist(nodelist, dist_filename, threshold=weight_threshold)
     for n in G:
         G.node[n]['labels'] = [n]
 
@@ -65,7 +66,7 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False):
     ncut_map = {} # label1/node id --> ncut label
     labels2_map = defaultdict(lambda: []) # ncut label --> list of seqids in that cut
     for g in nx.connected_component_subgraphs(G):
-        run_ncut(g, labels2_map, ncut_map, nodelist)
+        run_ncut(g, labels2_map, ncut_map, nodelist, ncut_threshold)
 
     seqid_unassigned = set(seqdict.keys())
     with open(output_prefix + '.partition.txt', 'w') as f:
@@ -108,15 +109,18 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False):
 if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument("fastq_filename")
+    parser.add_argument("fasta_filename")
     parser.add_argument("dist_filename")
     parser.add_argument("output_prefix")
     parser.add_argument("-c", "--count_filename", help="Count filename (if not given, assume all weight is 1)")
+    parser.add_argument("--sim_threshold", default=0.05, type=float, help="similarity threshold (default: 0.05)")
+    parser.add_argument("--ncut_threshold", default=0.2, type=float, help="ncut threshold (default: 0.2)")
+    parser.add_argument('--version', action='version', version='%(prog)s ' + str(get_version()))
 
     args = parser.parse_args()
 
-    if not os.path.exists(args.fastq_filename):
-        print >> sys.stderr, "Fastq filename {0} does not exist. Abort.".format(args.fastq_filename)
+    if not os.path.exists(args.fasta_filename):
+        print >> sys.stderr, "Fasta filename {0} does not exist. Abort.".format(args.fasta_filename)
         sys.exit(-1)
 
     if not os.path.exists(args.dist_filename):
@@ -128,7 +132,7 @@ if __name__ == "__main__":
         sys.exit(-1)
 
 
-    seqdict = dict((r.id.split()[0], r) for r in SeqIO.parse(open(args.fastq_filename),'fastq'))
+    seqdict = dict((r.id.split()[0], r) for r in SeqIO.parse(open(args.fasta_filename),'fasta'))
 
     if args.count_filename is not None:
         weightdict = {}
@@ -138,5 +142,7 @@ if __name__ == "__main__":
     else:
         weightdict = dict((seqid, 1) for seqid in seqdict)
 
-    labels2_map = family_finding(args.dist_filename, seqdict, args.output_prefix, has_pbid=False)
+    labels2_map = family_finding(args.dist_filename, seqdict, args.output_prefix, \
+                                 has_pbid=False, weight_threshold=args.sim_threshold, \
+                                 ncut_threshold=args.ncut_threshold)
     write_output_dirs(labels2_map, seqdict, weightdict, args.output_prefix)
