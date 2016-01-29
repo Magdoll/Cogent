@@ -52,7 +52,7 @@ def split_files(input_filename='in.fa', split_size=20):
 def run_Cogent_on_split_files(split_dirs):
     """
     1. run Cogent individually on each split directory
-    2. combine all aloha2.fa from split directories, run LP against input
+    2. combine all cogent2.fa from split directories, run LP against input
 
     """
     time1 = time.time()
@@ -65,11 +65,11 @@ def run_Cogent_on_split_files(split_dirs):
     if os.path.exists('combined'):
         run_external_call("rm -rf combined")
     os.makedirs('combined')
-    # now combine all the aloha2 results and run LP again
-    f = open('combined/aloha.fa', 'w')
+    # now combine all the cogent2 results and run LP again
+    f = open('combined/cogent.fa', 'w')
     i = 0
     for d in split_dirs:
-        for r in SeqIO.parse(open(os.path.join(d, 'aloha2.fa')), 'fasta'):
+        for r in SeqIO.parse(open(os.path.join(d, 'cogent2.fa')), 'fasta'):
             f.write(">path{0}\n{1}\n".format(i, r.seq))
             i += 1
     f.close()
@@ -86,10 +86,10 @@ def run_Cogent_on_split_files(split_dirs):
     post_gmap_processing()
     os.chdir('../')
 
-    # now the result we want is in combined/aloha2.fa, do postprocessing on it with the full in.fa
+    # now the result we want is in combined/cogent2.fa, do postprocessing on it with the full in.fa
 
-    run_external_call("ln -f -s combined/aloha2.fa aloha2.fa")
-    run_gmap(dbname='aloha2', infile='in.trimmed.fa')
+    run_external_call("ln -f -s combined/cogent2.fa cogent2.fa")
+    run_gmap(dbname='cogent2', infile='in.trimmed.fa')
     #post_gmap_processing()
 
     time4 = time.time()
@@ -209,7 +209,6 @@ def run_Cogent_on_input():
 
 
 
-
 def main():
     assert os.path.exists('in.fa')
     assert os.path.exists('in.weights')
@@ -230,8 +229,8 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument("dirname")
-    parser.add_argument("-D", "--gmap_db_path", help="GMAP database location (optional)", default='~/share/gmap_db_new')
-    parser.add_argument("-d", "--gmap_species", help="GMAP species name (optional)", default='cuttlefish')
+    parser.add_argument("-D", "--gmap_db_path", help="GMAP database location (optional)")
+    parser.add_argument("-d", "--gmap_species", help="GMAP species name (optional)")
     parser.add_argument("--small_genome", action="store_true", default=False, help="Genome size is smaller than 3GB (use gmap instead of gmapl)")
     parser.add_argument('--version', action='version', version='%(prog)s ' + str(get_version()))
 

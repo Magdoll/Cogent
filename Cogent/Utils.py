@@ -22,12 +22,12 @@ def run_external_call(cmd):
         raise Exception, "Failed to run: {0}".format(cmd)
 
 
-def run_gmap(dbname='aloha', infile='in.trimmed.fa'):
+def run_gmap(dbname='cogent', infile='in.trimmed.fa'):
     run_external_call("gmap_build -D . -d {0} {0}.fa".format(dbname))
     run_external_call("gmap -D . -d {0} -n 100 -f gff3_gene -t 1 {1} > {1}.gff".format(dbname, infile))
 
 
-def post_gmap_processing(db_name='aloha', gff_filename='in.trimmed.fa.gff', output_prefix='aloha2'):
+def post_gmap_processing(db_name='cogent', gff_filename='in.trimmed.fa.gff', output_prefix='cogent2'):
     good_for = defaultdict(lambda: [])
     reader = GFF.gmapGFFReader(gff_filename)
     for r in reader:
@@ -49,7 +49,7 @@ def post_gmap_processing(db_name='aloha', gff_filename='in.trimmed.fa.gff', outp
 
 
 def run_gmap_for_final_GFFs(small_genome=False, gmap_db_path='~/share/gmap_db_new/', species_db='cuttlefish',\
-                            input='in.trimmed.fa', output='aloha2'):
+                            input='in.trimmed.fa', output='cogent2'):
 
     if small_genome:
         prog = 'gmap'

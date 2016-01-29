@@ -104,11 +104,11 @@ def make_into_lp_problem(good_for, N):
     for t_i, p_i_s in good_for:
         #c_i_s = [1 if i in p_i_s else 0 for i in xrange(N)]
         prob += sum(variables[i]*(1 if i in p_i_s else 0) for i in xrange(N)) >= 1
-    prob.writeLP('aloha.lp')
+    prob.writeLP('cogent.lp')
     return prob
 
 
-def solve_with_lp_and_reduce(good_for, paths, mermap, outfile='aloha.fa'):
+def solve_with_lp_and_reduce(good_for, paths, mermap, outfile='cogent.fa'):
     prob = make_into_lp_problem(good_for, len(paths))
     prob.solve()
     for v in prob.variables(): log.debug("{0} = {1}".format(v.name, v.varValue))

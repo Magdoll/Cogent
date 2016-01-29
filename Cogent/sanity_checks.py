@@ -4,6 +4,12 @@ from Cogent import splice_align
 from Cogent.process_path import stitch_string_from_path
 from Cogent.Utils import run_external_call
 
+def sanity_check_mash_exists():
+    try:
+        run_external_call("mash --version")
+    except:
+        print >> sys.stderr, "mash executable does not exist. Please install mash first!"
+        sys.exit(-1)
 
 def sanity_check_gmapl_exists():
     """

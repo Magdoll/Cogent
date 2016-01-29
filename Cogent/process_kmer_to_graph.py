@@ -28,17 +28,20 @@ def write_output_dirs(labels2_map, seqdict, weightdict, output_prefix):
     """
     For each partition, create <output_prefix>/<partition>/in.fa and in.weights
     """
+    output_dirs = []
     # make the directory and the subdirs
     os.makedirs(output_prefix)
     for ncut_label, members in labels2_map.iteritems():
         d2 = os.path.join(output_prefix, str(ncut_label))
         os.makedirs(d2)
+        output_dirs.append(d2)
         with open(os.path.join(d2, 'in.fa'), 'w') as f:
             for seqid in members:
                 f.write(">{0}\n{1}\n".format(seqid, seqdict[seqid].seq))
         with open(os.path.join(d2, 'in.weights'), 'w') as f:
             for seqid in members:
                 f.write("{0}\t{1}\n".format(seqid, weightdict[seqid]))
+    return output_dirs
 
 
 def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False, weight_threshold=0.05, ncut_threshold=0.2):
