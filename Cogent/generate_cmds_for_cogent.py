@@ -17,8 +17,7 @@ def main(args):
 
         cmd = "reconstruct_contig.py " + d2
         if args.gmap_db_path is not None and args.gmap_species is not None:
-            cmd += " -D {0} -d {1}".format(\
-            os.path.join(args.dirname, d), args.gmap_db_path, args.gmap_species)
+            cmd += " -D {0} -d {1}".format(args.gmap_db_path, args.gmap_species)
         if args.small_genome:
             cmd += " --small_genome"
         print cmd
