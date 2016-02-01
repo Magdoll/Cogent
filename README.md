@@ -6,4 +6,6 @@ Cogent is a tool for reconstructing the coding genome using high-quality full-le
 
 See a [recent presentation](https://www.dropbox.com/s/mn6hwhguh0pqceu/20160106_Cogent_developers_conference_slides_Cuttlefish.pdf?dl=0) on Cogent being applied to the Cuttlefish Iso-Seq data. 
 
+A [preliminary draft paper](https://www.dropbox.com/s/gmndqsihsv7i4gt/20151023_Cogent_RECOMB2016_draft_LizTseng_v4.pdf?dl=0) is available. Note that there have been minor implementation changes since the draft was written, however the concept and overall methodology remains.
+
 Please see [wiki](https://github.com/Magdoll/Cogent/wiki) for details on usage.
