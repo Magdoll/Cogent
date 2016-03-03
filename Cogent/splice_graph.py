@@ -1,6 +1,7 @@
 import pdb
 import logging
-from Cogent.settings import KMER_SIZE, DEBUG_FLAG
+from Cogent import settings as cc_settings
+from Cogent.settings import DEBUG_FLAG
 from Cogent import splice_align
 from Cogent.process_path import make_in_same_path, stitch_string_from_path, path_finder
 from Cogent.sanity_checks import sanity_check_is_chain
@@ -19,7 +20,7 @@ def add_seq_to_graph(G, node_d, path_d, seq, seqid, seq_weight):
 
     max_node_index = max(node_d.itervalues()) + 1
     
-    prev = seq[:KMER_SIZE]
+    prev = seq[:cc_settings.KMER_SIZE]
     if prev in node_d:
         s = node_d[prev]
     else:
@@ -28,8 +29,8 @@ def add_seq_to_graph(G, node_d, path_d, seq, seqid, seq_weight):
         node_d[prev] = s
     path = [s]
 
-    for i in xrange(1, len(seq)-KMER_SIZE+1):
-        next = seq[i:i+KMER_SIZE]
+    for i in xrange(1, len(seq)-cc_settings.KMER_SIZE+1):
+        next = seq[i:i+cc_settings.KMER_SIZE]
         if next in node_d:
             t = node_d[next]
         else:
@@ -45,7 +46,7 @@ def add_seq_to_graph(G, node_d, path_d, seq, seqid, seq_weight):
     path_d[seqid] = path
 
 
-def untangle_homopolymer_helper(G, path_d, mermap, node):
+def untangle_homopolymer_helper(G, path_d, mermap, seqweights, node):
     """
     Homopolymers longer than kmer size will be self-edges with no indication how long it is.
 
@@ -64,9 +65,9 @@ def untangle_homopolymer_helper(G, path_d, mermap, node):
     The original node can be deleted if there are no single instances of it in path_d.
     """
     max_node_index = max(G.nodes_iter()) + 1
-    can_del_node = True
     homo_rev_mermap = {}
     for k,path in path_d.iteritems():
+        weight = seqweights[k]
         if node in path and path.count(node) >= 2:
             # find the longest stretch of repeated node in path
             i = path.index(node)
@@ -74,7 +75,6 @@ def untangle_homopolymer_helper(G, path_d, mermap, node):
                 for j in xrange(i+1, len(path)):
                     if path[j]!=node:
                         if j - i == 1: # just a single occurrence, skip over it
-                            can_del_node = False
                             break
 
                         # replace w/ path[i-1] -> new_homopolymer_node -> path[j]
@@ -89,9 +89,9 @@ def untangle_homopolymer_helper(G, path_d, mermap, node):
                             homo_rev_mermap[newmer] = newnode
                             mermap[newnode] = newmer
                         if i > 0:
-                            G.add_edge(path[i-1], newnode, weight=G.get_edge_data(path[i-1], node)['weight'])
+                            G.add_edge(path[i-1], newnode, weight=weight)
                         if j < len(path):
-                            G.add_edge(newnode, path[j], weight=G.get_edge_data(node, path[j])['weight'])
+                            G.add_edge(newnode, path[j], weight=weight)
 
                         #### DEBUG ####
                         if DEBUG_FLAG:
@@ -112,7 +112,7 @@ def untangle_homopolymer_helper(G, path_d, mermap, node):
                             homo_rev_mermap[newmer] = newnode
                             mermap[newnode] = newmer
                         if i > 0:
-                            G.add_edge(path[i-1], newnode, weight=G.get_edge_data(path[i-1], node)['weight'])
+                            G.add_edge(path[i-1], newnode, weight=weight)
 
                         #### DEBUG ####
                         if DEBUG_FLAG:
@@ -126,7 +126,14 @@ def untangle_homopolymer_helper(G, path_d, mermap, node):
                 except ValueError:  # we have searched through the whole path and there are no more of this node
                     break
 
+    # can safely remove the self-edge
+    G.remove_edge(node, node)
+    can_del_node = True
     # can only remove the node if it is not used anymore in G
+    for path in path_d.itervalues():
+        if node in path:
+            can_del_node = False
+
     if can_del_node:
         G.remove_node(node)
         del mermap[node]
@@ -150,7 +157,7 @@ def contract_sinks(G, path_d, mermap):
         pred = G.predecessors(sink)[0]
         # contract it by simply updating pred and removing sink from G
         log.debug("contract sink {0},{1}".format(pred, sink))
-        mermap[pred] = mermap[pred] + mermap[sink][(KMER_SIZE-1):]
+        mermap[pred] = mermap[pred] + mermap[sink][(cc_settings.KMER_SIZE-1):]
         # delete sink from G and path_d and mermap
         for k in path_d:
             if sink in path_d[k]:
@@ -199,6 +206,7 @@ def find_dangling_sinks(G, path_d, mermap):
                         path_d[k] = path_d[k][:-1] + [n]
                 del mermap[sink]
                 G.remove_node(sink)
+                break
 
 
 def collapse_chain(G, chain, mermap, path_d):
@@ -222,7 +230,7 @@ def collapse_chain(G, chain, mermap, path_d):
     newmer = mermap[chain[0]]
     for i in xrange(1, len(chain)-1):
         n = chain[i]
-        newmer += mermap[n][(KMER_SIZE-1):]
+        newmer += mermap[n][(cc_settings.KMER_SIZE-1):]
         weights_in_path.append(G.get_edge_data(chain[i], chain[i+1])['weight'])
         del mermap[n]
         G.remove_node(n)
@@ -439,11 +447,16 @@ def find_bubbles(G, path_d, mermap):
         for k in path_d:
             if path_to_del[0] in path_d[k]:
                 i = path_d[k].index(path_to_del[0])
-                if path_d[k][i:i+path_len] == path_to_del:
+                m = min(i+path_len, len(path_d[k]))
+                if path_d[k][i:m] == path_to_del[:(m-i)]:
                     path_d[k] = path_d[k][:i] + [n_to_replace_with] + path_d[k][i+path_len:]
         # now delete all non branching nodes in path_to_del
         # note: this filter must be done simultaneously because G.remove_node will dynamically change the degrees!
-        safe_to_remove = filter(lambda x: G.in_degree(x)<=1 and G.out_degree(x)<=1, path_to_del)
+
+        nodes_in_path = set()
+        for path in path_d.itervalues():
+            nodes_in_path = nodes_in_path.union(path)
+        safe_to_remove = filter(lambda x: G.in_degree(x)<=1 and G.out_degree(x)<=1 and x not in nodes_in_path, path_to_del)
         for node in safe_to_remove:
             log.debug("safe to delete from G: {0}".format(node))
             G.remove_node(node)
@@ -474,7 +487,7 @@ def find_bubbles(G, path_d, mermap):
                                                                                      G.get_edge_data(n2, n)['weight'])
                             replace_node(n_to_del=n2, n_to_replace_with=n1)
                         else:
-                            flag, is_skipped = splice_align.node_is_skipping(mermap[n1], mermap[n2], KMER_SIZE)
+                            flag, is_skipped = splice_align.node_is_skipping(mermap[n1], mermap[n2], cc_settings.KMER_SIZE)
                             if is_skipped:
                                 if flag == "SEQ1":  # seq1 is the one with retained exon
                                     replace_node(n_to_del=n2, n_to_replace_with=n1)
@@ -500,7 +513,7 @@ def find_bubbles(G, path_d, mermap):
                                     replace_path_w_node(p2, n1, common_succ=n)
 
                                 else:
-                                    flag, is_skipped = splice_align.node_is_skipping(s1, s2, KMER_SIZE)
+                                    flag, is_skipped = splice_align.node_is_skipping(s1, s2, cc_settings.KMER_SIZE)
                                     if is_skipped:
                                         log.debug("path collapse possible {0},{1}".format(n1, p2))
                                         mermap[n1] = s1 if flag == 'SEQ1' else s2
@@ -524,7 +537,7 @@ def find_bubbles(G, path_d, mermap):
                                     log.debug("path collapse possible: {0},{1}".format(p1, n2))
                                     replace_path_w_node(p1, n2, common_succ=n)
                                 else:
-                                    flag, is_skipped = splice_align.node_is_skipping(s1, s2, KMER_SIZE)
+                                    flag, is_skipped = splice_align.node_is_skipping(s1, s2, cc_settings.KMER_SIZE)
                                     if is_skipped:
                                         mermap[n2] = s1 if flag=='SEQ1' else s2
                                         replace_path_w_node(p1, n2, common_succ=n)

@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 from Cogent import all_simple_paths
-from Cogent.settings import KMER_SIZE
+from Cogent import settings as cc_settings
 from pulp import LpProblem, LpMinimize, LpVariable, LpInteger
 
 log = logging.getLogger('Cogent.process_path')
@@ -28,7 +28,7 @@ def stitch_string_from_path(path, mermap):
     """
     seq = mermap[path[0]]
     for i in xrange(1, len(path)):
-        seq += mermap[path[i]][(KMER_SIZE-1):]
+        seq += mermap[path[i]][(cc_settings.KMER_SIZE-1):]
     return seq
 
 

@@ -1,10 +1,21 @@
 # IPython log file
 import os, sys
-sys.path.insert(0, '/home/UNIXHOME/etseng/.VENVdefault2/lib/python2.7/site-packages/')
 from Bio import SeqIO
-import splice_graph as sp
-import splice_cycle
 import networkx as nx
+
+from Cogent import settings as cc
+#cc.DEBUG_FLAG = True
+cc.KMER_SIZE = 40
+
+
+from Cogent import sanity_checks, splice_cycle
+from Cogent import splice_graph as sp
+from Cogent.Utils import trim_ends, run_external_call, run_gmap, post_gmap_processing, run_gmap_for_final_GFFs
+from Cogent.process_path import solve_with_lp_and_reduce, find_minimal_path_needed_to_explain_pathd
+from Cogent.sanity_checks import sanity_check_gmapl_exists, sanity_check_path_all_valid
+
+sp.KMER_SIZE = cc.KMER_SIZE
+
 sys.setrecursionlimit(999999)
 
 def trim_ends(seq): 
@@ -32,7 +43,7 @@ G = nx.DiGraph()
 node_d = {None: -1}
 path_d = {}
 reader = SeqIO.parse(open('in.trimmed.fa'),'fasta')
-for r in reader: sp.initfunc(G, node_d, path_d, r.seq.tostring(), r.id, seqweights[r.id])
+for r in reader: sp.add_seq_to_graph(G, node_d, path_d, str(r.seq), r.id, seqweights[r.id])
 del node_d[None]
 mermap = dict((v,k) for k,v in node_d.iteritems())
 
@@ -40,6 +51,8 @@ mermap = dict((v,k) for k,v in node_d.iteritems())
 homo_nodes = filter(lambda n: G.has_edge(n, n), G.nodes_iter())
 for n in homo_nodes:
     sp.untangle_homopolymer_helper(G, path_d, mermap, n)
+
+splice_cycle.detect_and_replace_cycle(G, path_d, seqweights, mermap, max(G.nodes()), sp.KMER_SIZE)
 
 # cycle detection and abort if detected
 for k,v in path_d.iteritems():
@@ -57,8 +70,6 @@ for k,v in path_d.iteritems():
 visited = {}
 sp.reachability(G, mermap, visited, path_d)
 
-splice_cycle.detect_and_replace_cycle(G, path_d, seqweights, mermap, max(G.nodes()), sp.KMER_SIZE)
-
 nx.write_graphml(G, 'in.0.graphml')
 
 ## sanity check: confirm that all sequences can be reconstructed via the collapsed graph
@@ -69,22 +80,28 @@ nx.write_graphml(G, 'in.0.graphml')
 #    s2 = seqdict[k].seq.tostring().upper()
 #    assert s.find(s2) >= 0
 
+raw_input("TEST")
 while True:
     cur_num_nodes = G.number_of_nodes()
     sp.find_source_bubbles(G, path_d, mermap)
     sp.reachability(G, mermap, {}, path_d)
+    assert sanity_check_path_all_valid(path_d, G)
     sp.find_bubbles(G, path_d, mermap)
     sp.reachability(G, mermap, {}, path_d)
+    assert sanity_check_path_all_valid(path_d, G)
     sp.contract_sinks(G, path_d, mermap)
-#    sp.find_dangling_sinks(G, path_d, mermap)
+    assert sanity_check_path_all_valid(path_d, G)
+    sp.find_dangling_sinks(G, path_d, mermap)
     sp.reachability(G, mermap, {}, path_d)
+    assert sanity_check_path_all_valid(path_d, G)
     if G.number_of_nodes() == cur_num_nodes: break
-
+    raw_input("STAY")
 nx.write_graphml(G, 'in.1.graphml')
 
 keys = path_d.keys()
 keys.sort()
-good_for, paths = sp.find_minimal_path_needed_to_explain_pathd(G, path_d, keys)
-sp.solve_with_lp_and_reduce(good_for, paths, mermap)
-sp.run_gmap()
+good_for, paths = find_minimal_path_needed_to_explain_pathd(G, path_d, keys)
+solve_with_lp_and_reduce(good_for, paths, mermap)
+run_gmap()
+post_gmap_processing()
 

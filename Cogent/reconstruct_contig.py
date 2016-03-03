@@ -8,11 +8,12 @@ from Bio import SeqIO
 import networkx as nx
 
 from Cogent.__init__ import get_version
+from Cogent import settings as cc_settings
 from Cogent import sanity_checks, splice_cycle
 from Cogent import splice_graph as sp
 from Cogent.Utils import trim_ends, run_external_call, run_gmap, post_gmap_processing, run_gmap_for_final_GFFs
 from Cogent.process_path import solve_with_lp_and_reduce, find_minimal_path_needed_to_explain_pathd
-from Cogent.sanity_checks import sanity_check_gmapl_exists
+from Cogent.sanity_checks import sanity_check_gmapl_exists, sanity_check_path_all_valid
 
 
 sys.setrecursionlimit(999999)
@@ -52,7 +53,7 @@ def split_files(input_filename='in.fa', split_size=20):
 def run_Cogent_on_split_files(split_dirs):
     """
     1. run Cogent individually on each split directory
-    2. combine all cogent2.fa from split directories, run LP against input
+    2. combine all cogent2.fa from split directories, pretend they are the "INPUT", run Cogent on it
 
     """
     time1 = time.time()
@@ -65,21 +66,34 @@ def run_Cogent_on_split_files(split_dirs):
     if os.path.exists('combined'):
         run_external_call("rm -rf combined")
     os.makedirs('combined')
-    # now combine all the cogent2 results and run LP again
-    f = open('combined/cogent.fa', 'w')
+    # now combine all the cogent2 results and pretend they are the "INPUT"
+    f = open('combined/in.fa', 'w')
+    f2 = open('combined/in.weights', 'w')
     i = 0
     for d in split_dirs:
         for r in SeqIO.parse(open(os.path.join(d, 'cogent2.fa')), 'fasta'):
-            f.write(">path{0}\n{1}\n".format(i, r.seq))
+            f.write(">fake_input_path{0}\n{1}\n".format(i, r.seq))
+            f2.write("fake_input_path{0}\t1\n".format(i))
             i += 1
     f.close()
-
-    f = open('in.trimmed.fa', 'w')
-    for r in SeqIO.parse(open('in.fa'),'fasta'):
-        f.write(">{0}\n{1}\n".format(r.id, trim_ends(str(r.seq))))
-    f.close()
+    f2.close()
 
     os.chdir('combined')
+    run_Cogent_on_input()
+    os.chdir('../')
+
+    # now take the output from combined and run LP against it,
+    # using the real input this time
+
+    with open('in.trimmed.fa', 'w') as f:
+        for r in SeqIO.parse(open('in.fa'), 'fasta'):
+            f.write(">{0}\n{1}\n".format(r.id, trim_ends(str(r.seq))))
+
+    if os.path.exists('post_combined'):
+        run_external_call("rm -rf post_combined")
+    os.makedirs('post_combined')
+    os.chdir('post_combined')
+    run_external_call("ln -s ../combined/cogent2.fa cogent.fa")
     run_external_call("ln -s ../in.weights in.weights")
     run_external_call("ln -s ../in.trimmed.fa in.trimmed.fa")
     run_gmap()
@@ -88,7 +102,7 @@ def run_Cogent_on_split_files(split_dirs):
 
     # now the result we want is in combined/cogent2.fa, do postprocessing on it with the full in.fa
 
-    run_external_call("ln -f -s combined/cogent2.fa cogent2.fa")
+    run_external_call("ln -f -s post_combined/cogent2.fa cogent2.fa")
     run_gmap(dbname='cogent2', infile='in.trimmed.fa')
     #post_gmap_processing()
 
@@ -139,9 +153,9 @@ def run_Cogent_on_input():
     # resolve all homopolymers
     homo_nodes = filter(lambda n: G.has_edge(n, n), G.nodes_iter())
     for n in homo_nodes:
-        sp.untangle_homopolymer_helper(G, path_d, mermap, n)
+        sp.untangle_homopolymer_helper(G, path_d, mermap, seqweights, n)
 
-    splice_cycle.detect_and_replace_cycle(G, path_d, seqweights, mermap, max(G.nodes()), sp.KMER_SIZE)
+    splice_cycle.detect_and_replace_cycle(G, path_d, seqweights, mermap, max(G.nodes()), cc_settings.KMER_SIZE)
 
     visited = {}
     sp.reachability(G, mermap, visited, path_d)
@@ -181,6 +195,7 @@ def run_Cogent_on_input():
         sp.contract_sinks(G, path_d, mermap)
         sp.find_dangling_sinks(G, path_d, mermap)
         sp.reachability(G, mermap, {}, path_d)
+        #assert sanity_check_path_all_valid(path_d, G)
         if G.number_of_nodes() == cur_num_nodes:
             break
 
@@ -229,12 +244,17 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument("dirname")
+    parser.add_argument("-k", "--kmer_size", type=int, default=30, help="kmer size (default: 30)")
     parser.add_argument("-D", "--gmap_db_path", help="GMAP database location (optional)")
     parser.add_argument("-d", "--gmap_species", help="GMAP species name (optional)")
     parser.add_argument("--small_genome", action="store_true", default=False, help="Genome size is smaller than 3GB (use gmap instead of gmapl)")
     parser.add_argument('--version', action='version', version='%(prog)s ' + str(get_version()))
 
     args = parser.parse_args()
+
+    cc_settings.KMER_SIZE = args.kmer_size
+    assert sp.cc_settings.KMER_SIZE == args.kmer_size
+
 
     if not args.small_genome:
         sanity_check_gmapl_exists()
@@ -252,6 +272,8 @@ if __name__ == "__main__":
 
     # add the handlers to the logger
     log.addHandler(handler)
+
+    log.info("Setting k-mer size to: {0}".format(args.kmer_size))
 
     os.chdir(args.dirname)
     main()
