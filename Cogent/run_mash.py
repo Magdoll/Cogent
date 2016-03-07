@@ -100,7 +100,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("fasta_filename")
     parser.add_argument("-k", "--sketch_size", default=30, help="Sketch size (default: 30)")
-    parser.add_argument("-d", "--min_dist", default=0.05, help="Minimum distance (default: 0.05)")
+    parser.add_argument("-d", "--min_dist", default=0.95, help="Minimum distance (default: 0.95)")
     parser.add_argument("--chunk_size", default=1000, type=int, help="Chunk size")
     parser.add_argument("--cpus", default=1, type=int, help="# of CPUs (default: 1)")
     parser.add_argument('--version', action='version', version='%(prog)s ' + str(get_version()))
