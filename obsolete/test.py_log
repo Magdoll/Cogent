@@ -5,7 +5,7 @@ import networkx as nx
 
 from Cogent import settings as cc
 #cc.DEBUG_FLAG = True
-cc.KMER_SIZE = 40
+cc.KMER_SIZE = 30
 
 
 from Cogent import sanity_checks, splice_cycle

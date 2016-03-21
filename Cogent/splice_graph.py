@@ -246,6 +246,10 @@ def collapse_chain(G, chain, mermap, path_d):
     # which should be updated to ... -> some_node -> u -> v -> some_node -> ...
     for k in path_d:
         oldp = path_d[k]
+        if len(oldp) == 1 and oldp[0] in chain[1:-1]: # special case
+            path_d[k] = [n0, nlast]
+            continue
+
         newp = []   # use this to hold the first part of the path
         newp2 = []  # use this to hold the second part of the path
         for i,x in enumerate(oldp):
@@ -287,7 +291,7 @@ def reachability_helper(G, cur, chain, visited, mermap, path_d):
     """
     if cur in visited:
         if len(chain) >= 2:
-            log.debug("chain found!", chain + [cur])
+            log.debug("chain found! {0}".format(chain + [cur]))
             collapse_chain(G, chain+[cur], mermap, path_d)
         return
     visited[cur] = 1
@@ -298,7 +302,7 @@ def reachability_helper(G, cur, chain, visited, mermap, path_d):
         if outdeg == 0 or outdeg > 1:
             # chain ender
             if len(chain) >= 2:
-                log.debug("chain found!", chain + [cur])
+                log.debug("chain found! {0}".format(chain + [cur]))
                 collapse_chain(G, chain+[cur], mermap, path_d)
             # start another possible chain, does not include itself because outdeg is not 1
             for n in G.successors_iter(cur):
@@ -307,7 +311,7 @@ def reachability_helper(G, cur, chain, visited, mermap, path_d):
             reachability_helper(G, G.successors_iter(cur).next(), chain + [cur], visited, mermap, path_d)
     elif outdeg == 1: # indeg is 0 or > 1, outdeg == 1
         if len(chain) >= 2:
-            log.debug("chain found!", chain + [cur])
+            log.debug("chain found! {0}".format(chain + [cur]))
             collapse_chain(G, chain+[cur], mermap, path_d)
         # possible chain starter, includes itself becuz outdeg is 1
         reachability_helper(G, G.successors_iter(cur).next(), [cur], visited, mermap, path_d)

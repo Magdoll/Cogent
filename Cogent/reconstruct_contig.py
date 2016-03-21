@@ -97,7 +97,7 @@ def run_Cogent_on_split_files(split_dirs):
     run_external_call("ln -s ../in.weights in.weights")
     run_external_call("ln -s ../in.trimmed.fa in.trimmed.fa")
     run_gmap()
-    post_gmap_processing()
+    post_gmap_processing(seqrecs=[r for r in SeqIO.parse(open('in.trimmed.fa'), 'fasta')])
     os.chdir('../')
 
     # now the result we want is in combined/cogent2.fa, do postprocessing on it with the full in.fa
@@ -146,7 +146,10 @@ def run_Cogent_on_input():
     node_d = {None: -1}  # this is just used to initialize the graph, delete it later
     path_d = {}
     reader = SeqIO.parse(open('in.trimmed.fa'),'fasta')
-    for r in reader: sp.add_seq_to_graph(G, node_d, path_d, str(r.seq), r.id, seqweights[r.id])
+    seqrecs = []
+    for r in reader:
+        sp.add_seq_to_graph(G, node_d, path_d, str(r.seq), r.id, seqweights[r.id])
+        seqrecs.append(r)
     del node_d[None]
     mermap = dict((v,k) for k,v in node_d.iteritems())
 
@@ -213,7 +216,7 @@ def run_Cogent_on_input():
     time3 = time.time()
 
     run_gmap()
-    post_gmap_processing()
+    post_gmap_processing(seqrecs=seqrecs)
 
     time4 = time.time()
 
@@ -249,6 +252,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--gmap_species", help="GMAP species name (optional)")
     parser.add_argument("--small_genome", action="store_true", default=False, help="Genome size is smaller than 3GB (use gmap instead of gmapl)")
     parser.add_argument('--version', action='version', version='%(prog)s ' + str(get_version()))
+    parser.add_argument("--debug", action="store_true", default=False)
 
     args = parser.parse_args()
 
@@ -260,11 +264,17 @@ if __name__ == "__main__":
         sanity_check_gmapl_exists()
 
     log = logging.getLogger('Cogent')
-    log.setLevel(logging.INFO)
+    if args.debug:
+        log.setLevel(logging.DEBUG)
+    else:
+        log.setLevel(logging.INFO)
 
     # create a file handler
     handler = logging.FileHandler(os.path.join(args.dirname, 'hello.log'))
-    handler.setLevel(logging.INFO)
+    if args.debug:
+        handler.setLevel(logging.DEBUG)
+    else:
+        handler.setLevel(logging.INFO)
 
     # create a logging format
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')

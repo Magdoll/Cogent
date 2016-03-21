@@ -87,6 +87,9 @@ def sanity_check_path_all_valid(path_d, G):
     """
     check_passed = True
     for seqid, path in path_d.iteritems():
+        if path[0] not in G:
+            print "missing head node {0}".formt(path[0])
+            check_passed = False
         for i in xrange(len(path)-1):
             if not G.has_edge(path[i], path[i+1]):
                 print "missing path {0}->{1}".format(path[i], path[i+1])

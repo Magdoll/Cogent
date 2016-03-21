@@ -59,6 +59,12 @@ def main(fasta_filename, sketch_size, min_dist, chunk_size, cpus):
 
     sanity_check_mash_exists()
 
+    o = "{i}.k{k}.dist".format(i=fasta_filename, k=sketch_size)
+    if os.path.exists(o):
+        print >> sys.stderr, "Expected output {0} already exists. Just use it.".format(o)
+        os.chdir(olddir)
+        return os.path.join(dirname, o)
+
     inputs = split_input(fasta_filename, chunk_size)
     N = len(inputs)
 
@@ -79,12 +85,14 @@ def main(fasta_filename, sketch_size, min_dist, chunk_size, cpus):
     pool.close()
     pool.join()
     outputs = [ r.get() for r in results ]
-    o = "{i}.k{k}.dist".format(i=fasta_filename, k=sketch_size)
-    cmd = "cat " + " ".join(outputs) + " > " + o
+
+
     # combine the dist files
-    if subprocess.check_call(cmd, shell=True)!=0:
-        print >> sys.stderr, "FAIL CMD:", cmd
-        sys.exit(-1)
+    with open(o, 'w') as f:
+        for file in outputs:
+            for line in open(file):
+                f.write(line)
+
     # clean up the split files
     for file in inputs: os.remove(file)
     for file in files: os.remove(file)
