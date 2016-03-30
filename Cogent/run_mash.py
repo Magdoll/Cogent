@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 __author__ = 'etseng@pacb.com'
 import os, sys, subprocess
 from multiprocessing import Pool, TimeoutError
