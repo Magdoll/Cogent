@@ -5,7 +5,7 @@ import networkx as nx
 
 from Cogent import settings as cc
 #cc.DEBUG_FLAG = True
-cc.KMER_SIZE = 30
+cc.KMER_SIZE = 40
 
 
 from Cogent import sanity_checks, splice_cycle
@@ -61,10 +61,10 @@ for k,v in path_d.iteritems():
             print >> sys.stderr, "CYCLE detected! Abort!"
             os.system("touch CYCLE_DETECTED")
             sys.exit(-1)
-#iter = nx.simple_cycles(G)
-#for it in iter:
-#    print >> sys.stderr, "CYCLE detected! Abort!"
-#    os.system("touch CYCLE_DETECTED")
+iter = nx.simple_cycles(G)
+for it in iter:
+    print >> sys.stderr, "CYCLE detected! Abort!"
+    os.system("touch CYCLE_DETECTED")
 #    sys.exit(-1)
 
 visited = {}
@@ -91,6 +91,7 @@ while True:
     assert sanity_check_path_all_valid(path_d, G)
     sp.contract_sinks(G, path_d, mermap)
     assert sanity_check_path_all_valid(path_d, G)
+    raw_input("STOPHERE")
     sp.find_dangling_sinks(G, path_d, mermap)
     sp.reachability(G, mermap, {}, path_d)
     assert sanity_check_path_all_valid(path_d, G)

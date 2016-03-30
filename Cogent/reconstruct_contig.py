@@ -247,6 +247,7 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument("dirname")
+    parser.add_argument("-e", "--expected_error_rate", type=int, default=1, help="Expected error rate (default: 1%)")
     parser.add_argument("-k", "--kmer_size", type=int, default=30, help="kmer size (default: 30)")
     parser.add_argument("-D", "--gmap_db_path", help="GMAP database location (optional)")
     parser.add_argument("-d", "--gmap_species", help="GMAP species name (optional)")
@@ -259,6 +260,9 @@ if __name__ == "__main__":
     cc_settings.KMER_SIZE = args.kmer_size
     assert sp.cc_settings.KMER_SIZE == args.kmer_size
 
+    cc_settings.EXPECTED_ERR_RATE = args.expected_error_rate
+
+
 
     if not args.small_genome:
         sanity_check_gmapl_exists()
@@ -268,6 +272,13 @@ if __name__ == "__main__":
         log.setLevel(logging.DEBUG)
     else:
         log.setLevel(logging.INFO)
+
+    # clean out the log and DONE file if there was a previous run
+    if os.path.exists("COGENT.DONE"):
+        os.remove("COGENT.DONE")
+    if os.path.exists("hello.log"):
+        os.remove('hello.log')
+
 
     # create a file handler
     handler = logging.FileHandler(os.path.join(args.dirname, 'hello.log'))
@@ -284,6 +295,7 @@ if __name__ == "__main__":
     log.addHandler(handler)
 
     log.info("Setting k-mer size to: {0}".format(args.kmer_size))
+    log.info("Setting expected error rate to: {0}%".format(args.expected_error_rate))
 
     os.chdir(args.dirname)
     main()

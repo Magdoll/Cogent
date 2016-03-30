@@ -155,6 +155,8 @@ def contract_sinks(G, path_d, mermap):
     sinks = filter(lambda n: G.out_degree(n)==0 and G.in_degree(n)==1, G.nodes_iter())
     for sink in sinks:
         pred = G.predecessors(sink)[0]
+        # confirm that pred must have no other outgoing edges
+        if G.out_degree(pred) > 1: continue # skip it, has other outgoing edges
         # contract it by simply updating pred and removing sink from G
         log.debug("contract sink {0},{1}".format(pred, sink))
         mermap[pred] = mermap[pred] + mermap[sink][(cc_settings.KMER_SIZE-1):]

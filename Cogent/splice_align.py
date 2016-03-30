@@ -3,6 +3,7 @@ __author__ = 'etseng@pacb.com'
 import os, sys, subprocess
 from ssw_wrap import Aligner
 from Bio import SeqIO
+from settings import EXPECTED_ERR_RATE
 
 
 def iter_cigar_string(cigar_string):
@@ -27,7 +28,13 @@ def node_is_similar(seq1, seq2):
     o1 = Aligner(seq1, match=2, mismatch=5, gap_open=3, gap_extend=1, report_secondary=False, report_cigar=False)
     # require the the whole (shorter) seq2 must be aligned
     # and set min score to approx 90% accuracy
-    res = o1.align(seq2, min_score=int(l1*2*.80), min_len=int(l2*.9))
+
+    if EXPECTED_ERR_RATE == 0:
+        res = os.align(seq2, min_score=l2*2*1.0, min_len=l2*1.0)
+    elif EXPECTED_ERR_RATE < 2:
+        res = o1.align(seq2, min_score=int(l1*2*.80), min_len=int(l2*.9))
+    else:
+        raise Exception, "Expected error rate not implemented for {0}% and above".format(EXPECTED_ERR_RATE)
     return res is not None
 
 def node_is_skipping(seq1, seq2, kmer_size):

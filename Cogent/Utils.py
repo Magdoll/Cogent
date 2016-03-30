@@ -56,11 +56,13 @@ def post_gmap_processing(db_name='cogent', gff_filename='in.trimmed.fa.gff', out
                 f.write(">{0}\n{1}\n".format(r.id, r.seq))
         # if there are some sequences that didn't map (possibly from cycles)
         # then just use THEMSELVES
+        fake_path_i = max(touse)+1 if len(touse) >= 1 else 0
         for r in seqrecs:
             if r.id not in good_for:
                 log.warning("[BUG] {0} is not fully mapped to cogent in GMAP. \
                 Likely cycle issues. Use itself in output.".format(r.id))
-                f.write(">{0}\n{1}\n".format(r.id, r.seq))
+                f.write(">path{0}\n{1}\n".format(fake_path_i, r.seq))
+                fake_path_i += 1
 
 def run_gmap_for_final_GFFs(small_genome=False, gmap_db_path='~/share/gmap_db_new/', species_db='cuttlefish',\
                             input='in.trimmed.fa', output='cogent2'):
