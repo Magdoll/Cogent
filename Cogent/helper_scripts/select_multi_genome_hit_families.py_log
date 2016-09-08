@@ -1,0 +1,12 @@
+# IPython log file
+import os
+from csv import DictReader
+reader = DictReader(open('result.out1'),delimiter='\t')
+r = reader.next()
+touse = []
+for r in reader:
+    if int(r['num_scaffolds'])>1 and int(r['num_Cogent_contigs'])==1: touse.append(r)
+    
+for r in touse:
+    os.system("cp -rf {0} /home/UNIXHOME/etseng/TEST/spinach_59_multi_mapping_families/{0}".format(r['gene_family']))
+    

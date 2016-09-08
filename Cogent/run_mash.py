@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 __author__ = 'etseng@pacb.com'
 import os, sys, subprocess
 from multiprocessing import Pool, TimeoutError
@@ -35,12 +33,12 @@ def split_input(fasta_filename, chunk_size):
     f.close()
     return filter(lambda x: os.stat(x).st_size > 0, files)
 
-def run_sketch(fasta_filename, sketch_size):
-    cmd = "mash sketch -i -k {k} -o {i}.k{k} {i}".format(i=fasta_filename, k=sketch_size)
+def run_sketch(fasta_filename, kmer_size, sketch_size):
+    cmd = "mash sketch -i -k {k} -s {s} -o {i}.s{s}k{k} {i}".format(i=fasta_filename, k=kmer_size, s=sketch_size)
     if subprocess.check_call(cmd, shell=True)!=0:
         print >> sys.stderr, "ERROR running:", cmd
         sys.exit(-1)
-    return "{i}.k{k}.msh".format(i=fasta_filename, k=sketch_size)
+    return "{i}.s{s}k{k}.msh".format(i=fasta_filename, k=kmer_size, s=sketch_size)
 
 
 def run_dist(sketch1, sketch2, min_dist):
@@ -51,7 +49,7 @@ def run_dist(sketch1, sketch2, min_dist):
     print >> sys.stderr, "{0}.{1}.dist completed".format(sketch1, sketch2)
     return "{0}.{1}.dist".format(sketch1, sketch2)
 
-def main(fasta_filename, sketch_size, min_dist, chunk_size, cpus):
+def main(fasta_filename, kmer_size, sketch_size, min_dist, chunk_size, cpus):
 
     olddir = os.getcwd()
     dirname = os.path.dirname(os.path.abspath(fasta_filename))
@@ -61,7 +59,7 @@ def main(fasta_filename, sketch_size, min_dist, chunk_size, cpus):
 
     sanity_check_mash_exists()
 
-    o = "{i}.k{k}.dist".format(i=fasta_filename, k=sketch_size)
+    o = "{i}.s{s}k{k}.dist".format(i=fasta_filename, k=kmer_size, s=sketch_size)
     if os.path.exists(o):
         print >> sys.stderr, "Expected output {0} already exists. Just use it.".format(o)
         os.chdir(olddir)
@@ -73,7 +71,7 @@ def main(fasta_filename, sketch_size, min_dist, chunk_size, cpus):
     pool = Pool(processes=cpus)
 
     # get the sketch files
-    results = [ pool.apply_async(run_sketch, args=(inputs[i], sketch_size,)) for i in xrange(N) ]
+    results = [ pool.apply_async(run_sketch, args=(inputs[i], kmer_size, sketch_size,)) for i in xrange(N) ]
     files = [ r.get() for r in results ]
     pool.close()
     pool.join()
@@ -109,11 +107,12 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument("fasta_filename")
-    parser.add_argument("-k", "--sketch_size", default=30, help="Sketch size (default: 30)")
+    parser.add_argument("-k", "--kmer_size", default=30, help="K-mer size (default: 30)")
+    parser.add_argument("-s", "--sketch_size", default=1000, help="Sketch size (default: 1000)")
     parser.add_argument("-d", "--min_dist", default=0.95, help="Minimum distance (default: 0.95)")
     parser.add_argument("--chunk_size", default=1000, type=int, help="Chunk size")
     parser.add_argument("--cpus", default=1, type=int, help="# of CPUs (default: 1)")
     parser.add_argument('--version', action='version', version='%(prog)s ' + str(get_version()))
 
     args = parser.parse_args()
-    main(args.fasta_filename, args.sketch_size, args.min_dist, args.chunk_size, args.cpus)
+    main(args.fasta_filename, args.kmer_size, args.sketch_size, args.min_dist, args.chunk_size, args.cpus)

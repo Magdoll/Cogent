@@ -1,0 +1,15 @@
+# IPython log file
+import os
+from csv import DictReader
+reader = DictReader(open('result.out1'),delimiter='\t')
+r = reader.next()
+touse = []
+for r in reader:
+    if int(r['num_scaffolds'])==0: touse.append(r)
+
+os.makedirs("spinach_24_no_gene_mapping_families")
+os.chdir("spinach_24_no_gene_mapping_families")
+    
+for r in touse:
+    os.system("ln -s /home/UNIXHOME/etseng/projects2016/GenomeReconstruction/spinach/spinach_k30/{0} .".format(r['gene_family']))
+    

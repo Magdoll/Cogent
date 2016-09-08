@@ -1,0 +1,39 @@
+# IPython log file
+import os, sys
+from csv import DictReader, DictWriter
+
+fields = ['gene_family', 'input_size', 'num_Cogent_contigs', 'num_pacbio_contig', 'pacbio_cov', 'pacbio_acc', 'pacbio_chimeric', 'num_illn_contig', 'illn_cov', 'illn_acc', 'illn_chimeric', 'category', 'pacbio_contigs', 'illn_contigs']
+
+f = DictWriter(open('result.out1.categorized.txt', 'w'), fields, delimiter='\t')
+f.writeheader()
+
+reader = DictReader(open("result.out1.txt"),delimiter='\t')
+for r in reader:
+    c = int(r['num_Cogent_contigs'])
+    p = int(r['num_pacbio_contig'])
+    i = int(r['num_illn_contig'])
+    d = None
+    if c == 1:
+        if p==1 and i==1: d = '1_1_1'
+        elif p==1 and i>1: d = '1_1_g1'
+        elif p==0 and i==1: d = '1_0_1'
+        elif p==0 and i>1: d = '1_0_g1'
+        elif p==0 and i==0: d = '1_0_0'
+        elif p==1 and i==0: d = '1_1_0'
+        else: d = '1_others'
+    else:
+        if p==1 and i==1: d = 'g1_1_1'
+        elif p==0 and i>=1: d = 'g1_0_ge1'
+        elif p==0 and i==0: d = 'g1_0_0'
+        elif p>=1 and i==0: d = 'g1_ge1_0'
+        else: d = 'g1_others'
+
+    r['category'] = d
+    f.writerow(r)
+    print >> sys.stderr, "categorize {0} as {1}".format(r['gene_family'], d)
+    d2 = os.path.join('oneal_k30_postCategorization', d, os.path.basename(r['gene_family']))
+    if not os.path.exists(d2):
+        os.makedirs(d2)
+    cmd = "cp -rf -H {0}/in.trimmed.fa {0}/cogent2.fa {0}/*.gff {1}".format(r['gene_family'], d2)
+    os.system(cmd)
+#os.makedirs('oneal_k30_postCategorization')

@@ -1,0 +1,11 @@
+# IPython log file
+
+import connect_genome_scaffolds as sp
+import os
+import glob
+dirs = filter(lambda x: os.path.isdir(x), glob.glob('*'))
+import sys
+f = open('processed.contig_connections.txt', 'w')
+f.write("family\tpath\tscaffolds\n")
+for d in dirs:
+    sp.process_contig(d, f)

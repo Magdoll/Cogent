@@ -1,0 +1,30 @@
+# IPython log file
+
+import GFF
+import tally_Cogent_results as sp
+import sys
+import os
+import glob
+
+cogent_dir = 'premier_k30'
+genome1 = 'blueberry_illumina'
+genome2 = 'blueberry_illumina'
+
+dirs = filter(lambda x: os.path.isdir(x) and os.path.exists(os.path.join(x,'COGENT.DONE')), glob.glob(cogent_dir+'/*'))
+
+f1 = open('result.out1.txt', 'w')
+f2 = open('result.out2.txt', 'w')
+f3 = open('result.err.txt', 'w')
+f1.write("gene_family\tinput_size\tnum_Cogent_contigs\tnum_pacbio_contig\tpacbio_cov\tpacbio_acc\tpacbio_chimeric\tpacbio_contigs\tnum_illn_contig\tilln_cov\tilln_acc\tilln_chimeric\tilln_contigs\n")
+f2.write("seqid\tgene_family\tCogent_contig\tCogent_contig_acc\tscaffold\tnum_scaffold\tscaffold_coverage\tscaffold_acc\n")
+for d in dirs:
+    try:
+        sp.tally_for_a_Cogent_dir(d, f1, f2, genome1, genome2)
+        print d
+    except:
+        f3.write("error with {0}. ignore\n".format(d))
+
+f1.close()
+f2.close()
+f3.close()
+    
