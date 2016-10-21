@@ -4,8 +4,8 @@ from Bio import SeqIO
 import networkx as nx
 
 from Cogent import settings as cc
-#cc.DEBUG_FLAG = True
-cc.KMER_SIZE = 60
+cc.DEBUG_FLAG = True
+cc.KMER_SIZE = 30
 
 
 from Cogent import sanity_checks, splice_cycle
@@ -47,12 +47,18 @@ for r in reader: sp.add_seq_to_graph(G, node_d, path_d, str(r.seq), r.id, seqwei
 del node_d[None]
 mermap = dict((v,k) for k,v in node_d.iteritems())
 
+raw_input("before homo")
+
 # resolve all homopolymers
 homo_nodes = filter(lambda n: G.has_edge(n, n), G.nodes_iter())
 for n in homo_nodes:
     sp.untangle_homopolymer_helper(G, path_d, mermap, n)
 
+raw_input("before cycle detection")
+
 splice_cycle.detect_and_replace_cycle(G, path_d, seqweights, mermap, max(G.nodes()), sp.KMER_SIZE)
+
+raw_input("after cycle detection")
 
 # cycle detection and abort if detected
 for k,v in path_d.iteritems():
@@ -61,10 +67,10 @@ for k,v in path_d.iteritems():
             print >> sys.stderr, "CYCLE detected! Abort!"
             os.system("touch CYCLE_DETECTED")
             sys.exit(-1)
-iter = nx.simple_cycles(G)
-for it in iter:
-    print >> sys.stderr, "CYCLE detected! Abort!"
-    os.system("touch CYCLE_DETECTED")
+#iter = nx.simple_cycles(G)
+#for it in iter:
+#    print >> sys.stderr, "CYCLE detected! Abort!"
+#    os.system("touch CYCLE_DETECTED")
 #    sys.exit(-1)
 
 visited = {}

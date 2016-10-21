@@ -141,6 +141,11 @@ def run_Cogent_on_input():
             seqid, weight = line.strip().split('\t')
             seqweights[seqid] = int(weight)
 
+    adjusted_kmer = splice_cycle.precycle_kmer_adjustment(cc_settings.KMER_SIZE)
+    if adjusted_kmer != cc_settings.KMER_SIZE:
+        log.info("Adjusting k-mer size to: {0}".format(adjusted_kmer))
+        cc_settings.KMER_SIZE = adjusted_kmer
+
     # setting up the DiGraph
     G = nx.DiGraph()
     node_d = {None: -1}  # this is just used to initialize the graph, delete it later
@@ -152,6 +157,8 @@ def run_Cogent_on_input():
         seqrecs.append(r)
     del node_d[None]
     mermap = dict((v,k) for k,v in node_d.iteritems())
+
+
 
     # resolve all homopolymers
     homo_nodes = filter(lambda n: G.has_edge(n, n), G.nodes_iter())
@@ -168,14 +175,17 @@ def run_Cogent_on_input():
     for k,v in path_d.iteritems():
         for x in v:
             if v.count(x) > 1:
-                log.info("CYCLE detected! Abort!")
+                log.info("CYCLE detected through path analysis! Abort!")
                 os.system("touch CYCLE_DETECTED")
                 sys.exit(-1)
-    #iter = nx.simple_cycles(G)
-    #for it in iter:
-    #    print >> sys.stderr, "CYCLE detected! Abort!"
-    #    os.system("touch CYCLE_DETECTED")
-    #    sys.exit(-1)
+
+    if cc_settings.NX_CYCLE_DETECTION:
+        log.info("Doing nx.cycle_detection....")
+        iter = nx.simple_cycles(G)
+        for _it in iter:
+            print >> sys.stderr, "CYCLE detected through simple_cycles! Abort!"
+            os.system("touch CYCLE_DETECTED")
+            sys.exit(-1)
 
     nx.write_graphml(G, 'in.0.graphml')
 
@@ -248,6 +258,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("dirname")
     parser.add_argument("-e", "--expected_error_rate", type=int, default=1, help="Expected error rate (default: 1%)")
+    parser.add_argument("--nx_cycle_detection", default=False, action="store_true", help="Cycle detection using networkx (default: off), will increase run-time. Recommend for debugging failed cases only.")
     parser.add_argument("-k", "--kmer_size", type=int, default=30, help="kmer size (default: 30)")
     parser.add_argument("-D", "--gmap_db_path", help="GMAP database location (optional)")
     parser.add_argument("-d", "--gmap_species", help="GMAP species name (optional)")
@@ -261,6 +272,7 @@ if __name__ == "__main__":
     assert sp.cc_settings.KMER_SIZE == args.kmer_size
 
     cc_settings.EXPECTED_ERR_RATE = args.expected_error_rate
+    cc_settings.NX_CYCLE_DETECTION = args.nx_cycle_detection
 
 
 

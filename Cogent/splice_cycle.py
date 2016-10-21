@@ -1,5 +1,55 @@
 import pdb
+import logging
+from collections import defaultdict
+from Bio import SeqIO
 from Cogent.process_path import stitch_string_from_path
+
+log = logging.getLogger('Cogent.splice_cycle')
+
+def max_common_sequence_length(seq, indices, cur_size):
+    """
+    Return the length of the longest commmon sequence for all subseq starting at
+    index indices[0], indices[1], ....etc
+    """
+    seqlen = len(seq)
+    j = cur_size+1
+    while j < seqlen-indices[-1]:
+        firstnt = seq[indices[0]+j]
+        if not all(seq[i+j]==firstnt for i in indices[1:]):
+            return j
+        j += 1
+    return j
+
+def precycle_kmer_adjustment(kmer_size):
+    """
+    Even with detect_and_replace_cycle (which only looks at repeat kmers within a seq),
+    there can be cycles in the graph. So instead, try to detect k-mer re-usage and do simple
+    tests using networkx.simple_cycles to see if we can eliminate them as much as possible.
+    """
+    seqdict = SeqIO.to_dict(SeqIO.parse(open('in.trimmed.fa'), 'fasta'))
+    kmer_usage = defaultdict(lambda: defaultdict(lambda: [])) # kmer -> (seqid, i)
+    for r in SeqIO.parse(open('in.trimmed.fa'),'fasta'):
+        for i in xrange(len(r.seq)-kmer_size):
+            kmer_usage[r.seq.tostring()[i:i+kmer_size]][r.id].append(i)
+
+    max_kmer_needed = []
+    for kmer,v in kmer_usage.iteritems():
+        for seqid, indices in v.iteritems():
+            if len(indices) > 1: # kmer appeared more than once in the same sequence
+                max_kmer_needed.append(max_common_sequence_length(seqdict[seqid], indices, kmer_size))
+    if len(max_kmer_needed) == 0:
+        log.info("K-mer in-seq cycle detection: None found at k={0}".format(kmer_size))
+        return kmer_size
+    else:
+        min_adjusted_k = min(max_kmer_needed)
+        max_adjusted_k = max(max_kmer_needed)
+        mean_adjusted_k = sum(max_kmer_needed)*1./len(max_kmer_needed)
+        log.info("K-mer in-seq cycle detection: {0} in-seq cycle found with max common \
+        sequence analysis showing min: {1}, max: {2}, mean: {3}".format(\
+            len(max_kmer_needed), min_adjusted_k, max_adjusted_k, mean_adjusted_k))
+
+        return min(100, max_adjusted_k)
+
 
 def detect_and_replace_cycle(G, path_d, weight_d, mermap, max_node_index, kmer_size, debug=False):
     """

@@ -1,6 +1,6 @@
 # Cogent: COding GENome reconstruction Tool
 
-Current version: 1.3
+Current version: 1.4
 
 Cogent is a tool for reconstructing the coding genome using high-quality full-length transcriptome sequences. It is designed to be used on [Iso-Seq data](https://github.com/PacificBiosciences/cDNA_primer/wiki) and in cases where there is no reference genome or the ref genome is highly incomplete. 
 
@@ -17,3 +17,5 @@ Please see [wiki](https://github.com/Magdoll/Cogent/wiki) for details on usage.
 2016.03.21  updated to version 1.2. Fixed more minor bugs related to edge cases esp caused by non-obvious graph cycles.
 
 2016.03.30  updated to version 1.3. Important bug in `splice_graph.contract_sinks` fixed where it previously was accidentally contracting sinks with predecessors that had multiple outgoing edges, which causes incorrect reconstructions in cases where there are a lot of isoforms with alternative 3' ends.
+
+2016.10.20  updated to version 1.4. Added features that detects cycles and tries to update k-mers to larger sizes to accommodate for that. Also found a bug in bubble detection that caused errors. Both are fixed.

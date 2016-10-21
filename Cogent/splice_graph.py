@@ -16,6 +16,7 @@ def add_seq_to_graph(G, node_d, path_d, seq, seqid, seq_weight):
     node_d --- dict of sequence --> node index
     path_d --- dict of seqid --> paths through G to reconstruct sequence
     """
+    #log.info("Sanity check: in add_seq_to_graph, k-mer size is: {0}".format(cc_settings.KMER_SIZE))
     seq = seq.upper()
 
     max_node_index = max(node_d.itervalues()) + 1
@@ -449,6 +450,12 @@ def find_bubbles(G, path_d, mermap):
             else:
                 G.add_edge(n_to_replace_with, t, weight=data['weight'])
 
+        # for every predecssor of path_to_del, replace with n_to_replace_with
+        # ex:        pred -> x1 -> x2 -> ...
+        # becomes    pred -> n_to_replace_with -> ...
+        for pred in G.predecessors(path_to_del[0]):
+            G.add_edge(pred, n_to_replace_with, weight=G.get_edge_data(pred, path_to_del[0])['weight'])
+
         path_len = len(path_to_del)
         for k in path_d:
             if path_to_del[0] in path_d[k]:
@@ -462,7 +469,8 @@ def find_bubbles(G, path_d, mermap):
         nodes_in_path = set()
         for path in path_d.itervalues():
             nodes_in_path = nodes_in_path.union(path)
-        safe_to_remove = filter(lambda x: G.in_degree(x)<=1 and G.out_degree(x)<=1 and x not in nodes_in_path, path_to_del)
+        safe_to_remove = filter(lambda x: G.out_degree(x)<=1 and x not in nodes_in_path, path_to_del)
+        #safe_to_remove = filter(lambda x: G.in_degree(x)<=1 and G.out_degree(x)<=1 and x not in nodes_in_path, path_to_del)
         for node in safe_to_remove:
             log.debug("safe to delete from G: {0}".format(node))
             G.remove_node(node)
