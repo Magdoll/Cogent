@@ -16,6 +16,9 @@ from Cogent.process_path import solve_with_lp_and_reduce, find_minimal_path_need
 from Cogent.sanity_checks import sanity_check_gmapl_exists, sanity_check_path_all_valid
 
 
+class CycleDetectedException(Exception):
+    pass
+
 sys.setrecursionlimit(999999)
 
 
@@ -175,17 +178,17 @@ def run_Cogent_on_input():
     for k,v in path_d.iteritems():
         for x in v:
             if v.count(x) > 1:
-                log.info("CYCLE detected through path analysis! Abort!")
+                log.info("CYCLE detected through path analysis! Raise CycleDetectedException!")
                 os.system("touch CYCLE_DETECTED")
-                sys.exit(-1)
+                raise CycleDetectedException
 
     if cc_settings.NX_CYCLE_DETECTION:
         log.info("Doing nx.cycle_detection....")
         iter = nx.simple_cycles(G)
         for _it in iter:
-            print >> sys.stderr, "CYCLE detected through simple_cycles! Abort!"
+            print >> sys.stderr, "CYCLE detected through simple_cycles! Raise CycleDetectedException!"
             os.system("touch CYCLE_DETECTED")
-            sys.exit(-1)
+            raise CycleDetectedException
 
     nx.write_graphml(G, 'in.0.graphml')
 
@@ -310,7 +313,14 @@ if __name__ == "__main__":
     log.info("Setting expected error rate to: {0}%".format(args.expected_error_rate))
 
     os.chdir(args.dirname)
-    main()
+    while cc_settings.KMER_SIZE <= 200:
+        try:
+            main()
+            break
+        except CycleDetectedException:
+            cc_settings.KMER_SIZE += 20
+            log.info("Trying to raise k={0}. Rerun attempt.".format(cc_settings.KMER_SIZE))
+
     os.system("touch COGENT.DONE")
 
     if args.gmap_db_path is not None and args.gmap_species is not None:
