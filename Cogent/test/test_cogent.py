@@ -12,8 +12,7 @@ from Bio import SeqIO
 
 class TestCogent(unittest.TestCase):
     def test_cogent(self):
-        d = '/home/UNIXHOME/etseng/TEST/aloha/test'
-        #d = tempfile.mkdtemp()
+        d = tempfile.mkdtemp()
         fname = os.path.join(d ,'human_test.fa')
 
         with open(fname, 'w') as f:
