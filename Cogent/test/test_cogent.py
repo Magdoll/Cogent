@@ -12,7 +12,8 @@ from Bio import SeqIO
 
 class TestCogent(unittest.TestCase):
     def test_cogent(self):
-        d = tempfile.mkdtemp()
+        d = '/home/UNIXHOME/etseng/TEST/aloha/test'
+        #d = tempfile.mkdtemp()
         fname = os.path.join(d ,'human_test.fa')
 
         with open(fname, 'w') as f:
@@ -20,8 +21,8 @@ class TestCogent(unittest.TestCase):
 
         seqdict = dict((r.id.split()[0], r) for r in SeqIO.parse(open(fname),'fasta'))
         weightdict = dict((seqid, 1) for seqid in seqdict)
-
-        dist_filename = run_mash_main(fname, sketch_size=30, min_dist=0.05, chunk_size=100, cpus=1)
+        
+        dist_filename = run_mash_main(fname, kmer_size=30, sketch_size=1000, min_dist=0.95, chunk_size=100, cpus=1)
 
         output_prefix = os.path.join(d, 'human_test.k30')
 
@@ -43,7 +44,8 @@ class TestCogent(unittest.TestCase):
             assert os.path.exists('cogent2.fa')
             result = SeqIO.to_dict(SeqIO.parse(open('cogent2.fa'), 'fasta'))
             for _path, _seq in data.cogent2[i].iteritems():
-                assert str(_seq) == str(result[_path].seq)
+                if str(_seq) != str(result[_path].seq):
+                    raise Exception, "TEST FAILED! Results don't agree in cogent2.fa for {0}".format(o)
             os.chdir(d)
 
         # DONE remove test directory
