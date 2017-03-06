@@ -11,7 +11,7 @@ from Cogent.__init__ import get_version
 from Cogent import settings as cc_settings
 from Cogent import sanity_checks, splice_cycle
 from Cogent import splice_graph as sp
-from Cogent.Utils import trim_ends, run_external_call, run_gmap, post_gmap_processing, run_gmap_for_final_GFFs
+from Cogent.Utils import trim_ends, run_external_call, run_gmap, cleanup_gmap, post_gmap_processing, run_gmap_for_final_GFFs
 from Cogent.process_path import solve_with_lp_and_reduce, find_minimal_path_needed_to_explain_pathd
 from Cogent.sanity_checks import sanity_check_gmapl_exists, sanity_check_path_all_valid
 
@@ -63,7 +63,16 @@ def run_Cogent_on_split_files(split_dirs):
     olddir = os.getcwd()
     for d in split_dirs:
         os.chdir(d)
+        if os.path.exists('cogent2.fa'):
+            print >> sys.stderr, "skipping {0} because done already".format(d)
+            os.chdir(olddir)
+            continue
         run_Cogent_on_input()
+        # clean up cogent in the split dir
+        if os.path.exists('cogent') and os.path.isdir('cogent'):
+            cleanup_gmap('cogent')
+        if os.path.exists('cogent2') and os.path.isdir('cogent2'):
+            cleanup_gmap('cogent2')
         os.chdir(olddir)
 
     if os.path.exists('combined'):
@@ -82,6 +91,9 @@ def run_Cogent_on_split_files(split_dirs):
     f2.close()
 
     os.chdir('combined')
+    if i > cc_settings.MAX_POST_SPLIT_IN_SIZE:
+        dirs = split_files(input_filename='in.fa', split_size=cc_settings.MAX_POST_SPLIT_IN_SIZE)
+        run_Cogent_on_split_files(dirs)
     run_Cogent_on_input()
     os.chdir('../')
 
@@ -248,12 +260,17 @@ def main():
 
     num_size = int(os.popen("grep -c \">\" in.fa").read().strip())
 
-    if num_size <= 20:
+    if num_size <= cc_settings.MAX_SPLIT_IN_SIZE:
         run_Cogent_on_input()
     else:
-        dirs = split_files(input_filename='in.fa', split_size=20)
+        dirs = split_files(input_filename='in.fa', split_size=cc_settings.MAX_SPLIT_IN_SIZE)
         run_Cogent_on_split_files(dirs)
 
+    # clean up GMAP db files
+    if os.path.exists('cogent') and os.path.isdir('cogent'):
+        cleanup_gmap('cogent')
+    if os.path.exists('cogent2') and os.path.isdir('cogent2'):
+        cleanup_gmap('cogent2')
 
 if __name__ == "__main__":
 

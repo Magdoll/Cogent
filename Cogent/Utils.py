@@ -30,6 +30,8 @@ def run_gmap(dbname='cogent', infile='in.trimmed.fa'):
     run_external_call("gmap_build -D . -d {0} {0}.fa".format(dbname))
     run_external_call("gmap -D . -d {0} -n 100 -f gff3_gene -t 1 {1} > {1}.gff".format(dbname, infile))
 
+def cleanup_gmap(dbname='cogent'):
+    run_external_call("rm -rf " + dbname)
 
 def post_gmap_processing(db_name='cogent', gff_filename='in.trimmed.fa.gff', output_prefix='cogent2', seqrecs=[]):
     good_for = defaultdict(lambda: [])
