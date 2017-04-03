@@ -53,7 +53,7 @@ def split_files(input_filename='in.fa', split_size=20):
     return split_dirs
 
 
-def run_Cogent_on_split_files(split_dirs):
+def run_Cogent_on_split_files(split_dirs, depth):
     """
     1. run Cogent individually on each split directory
     2. combine all cogent2.fa from split directories, pretend they are the "INPUT", run Cogent on it
@@ -91,9 +91,9 @@ def run_Cogent_on_split_files(split_dirs):
     f2.close()
 
     os.chdir('combined')
-    if i > cc_settings.MAX_POST_SPLIT_IN_SIZE:
+    if i > cc_settings.MAX_POST_SPLIT_IN_SIZE and depth < cc_settings.MAX_RECUR_DEPTH:
         dirs = split_files(input_filename='in.fa', split_size=cc_settings.MAX_POST_SPLIT_IN_SIZE)
-        run_Cogent_on_split_files(dirs)
+        run_Cogent_on_split_files(dirs, depth+1)
     run_Cogent_on_input()
     os.chdir('../')
 
@@ -264,7 +264,7 @@ def main():
         run_Cogent_on_input()
     else:
         dirs = split_files(input_filename='in.fa', split_size=cc_settings.MAX_SPLIT_IN_SIZE)
-        run_Cogent_on_split_files(dirs)
+        run_Cogent_on_split_files(dirs, depth=0)
 
     # clean up GMAP db files
     if os.path.exists('cogent') and os.path.isdir('cogent'):
