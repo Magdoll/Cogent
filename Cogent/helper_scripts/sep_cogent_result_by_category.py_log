@@ -31,7 +31,7 @@ for r in reader:
     r['category'] = d
     f.writerow(r)
     print >> sys.stderr, "categorize {0} as {1}".format(r['gene_family'], d)
-    d2 = os.path.join('spleen_k30_postCategorization', d, os.path.basename(r['gene_family']))
+    d2 = os.path.join('oneal_k30_postCategorization', d, os.path.basename(r['gene_family']))
     if not os.path.exists(d2):
         os.makedirs(d2)
     cmd = "cp -rf -H {0}/in.trimmed.fa {0}/cogent2.fa {0}/*.gff {1}".format(r['gene_family'], d2)

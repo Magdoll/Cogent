@@ -7,7 +7,7 @@
 import os, sys, glob
 
 cogent_dir = "oneal_k30"
-gmap_name = "blueberry_illumina"
+gmap_name = "blueberry_jersey_Falcon"
 gmap_cmd = "~/bin/gmap -D /home/UNIXHOME/etseng/share/gmap_db_new/ -n 0 -t 6 -f gff3_gene --max-intronlength-ends 200000 --max-intronlength-middle 200000 --cross-species "
 force_rerun = False
 

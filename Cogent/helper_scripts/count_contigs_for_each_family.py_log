@@ -6,8 +6,8 @@ import sys
 import os
 import glob
 
-cogent_dir = 'premier_k30'
-genome1 = 'blueberry_illumina'
+cogent_dir = 'oneal_k30'
+genome1 = 'blueberry_jersey_Falcon'
 genome2 = 'blueberry_illumina'
 
 dirs = filter(lambda x: os.path.isdir(x) and os.path.exists(os.path.join(x,'COGENT.DONE')), glob.glob(cogent_dir+'/*'))
