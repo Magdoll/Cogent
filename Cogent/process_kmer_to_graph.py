@@ -59,13 +59,17 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False, weight
     nodelist = seqdict.keys()
     nodelist = dict((x,i) for i,x in enumerate(nodelist))  # seqid --> index
 
+
+    print >> sys.stderr, "making weight graph from ", dist_filename
     G = pk.make_weighted_graph_from_mash_dist(nodelist, dist_filename, threshold=weight_threshold)
     for n in G:
         G.node[n]['labels'] = [n]
+    print >> sys.stderr, "graph contains {0} nodes, {1} edges".format(G.number_of_nodes(), G.number_of_edges())
 
     # now we convert nodelist back to index --> seqid
     nodelist = dict((i,x) for (x,i) in nodelist.iteritems())
 
+    print >> sys.stderr, "performing ncut on graph...."
     ncut_map = {} # label1/node id --> ncut label
     labels2_map = defaultdict(lambda: []) # ncut label --> list of seqids in that cut
     for g in nx.connected_component_subgraphs(G):
