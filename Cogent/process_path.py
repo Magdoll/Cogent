@@ -1,4 +1,6 @@
+import sys
 import logging
+import random
 from collections import defaultdict
 from Cogent import all_simple_paths
 from Cogent import settings as cc_settings
@@ -81,7 +83,7 @@ def path_match(target_path, match_path):
         return False
 
 
-def make_into_lp_problem(good_for, N):
+def make_into_lp_problem(good_for, N, add_noise=False):
     """
     Helper function for solve_with_lp_and_reduce()
 
@@ -93,24 +95,44 @@ def make_into_lp_problem(good_for, N):
     # each good_for is (isoform_index, [list of matched paths index])
     # ex: (0, [1,2,4])
     # ex: (3, [2,5])
-    variables = [LpVariable(str(i),0,1,LpInteger) for i in xrange(N)]
+    used_paths = []
+    for t_i, p_i_s in good_for:
+        used_paths += p_i_s
+    used_paths = list(set(used_paths))
+
+    variables = [LpVariable(str(i),0,1,LpInteger) for i in used_paths]
+    #variables = [LpVariable(str(i),0,1,LpInteger) for i in xrange(N)]
 
     # objective is to minimize sum_{Xi}
     prob += sum(v for v in variables)
 
+    already_seen = set()
     # constraints are for each isoform, expressed as c_i * x_i >= 1
     # where c_i = 1 if x_i is matched for the isoform
     # ex: (0, [1,2,4]) becomes t_0 = x_1 + x_2 + x_4 >= 1
     for t_i, p_i_s in good_for:
         #c_i_s = [1 if i in p_i_s else 0 for i in xrange(N)]
-        prob += sum(variables[i]*(1 if i in p_i_s else 0) for i in xrange(N)) >= 1
+        #prob += sum(variables[i]*(1 if i in p_i_s else 0) for i in xrange(N)) >= 1
+        p_i_s.sort()
+        pattern = ",".join(map(str,p_i_s))
+        #print >> sys.stderr, t_i, p_i_s, pattern
+        if pattern not in already_seen:
+            if add_noise:
+                prob += sum(variables[i]*(1+random.random() if p in p_i_s else 0) for i,p in enumerate(used_paths)) >= 1
+            else:
+                prob += sum(variables[i]*(1 if p in p_i_s else 0) for i,p in enumerate(used_paths)) >= 1
+        already_seen.add(pattern)
     prob.writeLP('cogent.lp')
     return prob
 
 
 def solve_with_lp_and_reduce(good_for, paths, mermap, outfile='cogent.fa'):
-    prob = make_into_lp_problem(good_for, len(paths))
-    prob.solve()
+    try:
+        prob = make_into_lp_problem(good_for, len(paths), add_noise=False)
+        prob.solve()
+    except:
+        prob = make_into_lp_problem(good_for, len(paths), add_noise=True)
+        prob.solve()
     for v in prob.variables(): log.debug("{0} = {1}".format(v.name, v.varValue))
     touse = []
     for v in prob.variables():

@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import logging
+import binascii
 from Bio import SeqIO
 import networkx as nx
 
@@ -272,6 +273,13 @@ def main():
     if os.path.exists('cogent2') and os.path.isdir('cogent2'):
         cleanup_gmap('cogent2')
 
+
+    # rewrite cogent2.fa with prefix
+    f = open('cogent2.renamed.fasta', 'w')
+    for r in SeqIO.parse(open('cogent2.fa'), 'fasta'):
+        f.write(">{0}|{1}\n{2}\n".format(cc_settings.OUTPUT_PREFIX, r.id, r.seq))
+    f.close()
+
 if __name__ == "__main__":
 
     from argparse import ArgumentParser
@@ -280,6 +288,7 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--expected_error_rate", type=int, default=1, help="Expected error rate (default: 1%)")
     parser.add_argument("--nx_cycle_detection", default=False, action="store_true", help="Cycle detection using networkx (default: off), will increase run-time. Recommend for debugging failed cases only.")
     parser.add_argument("-k", "--kmer_size", type=int, default=30, help="kmer size (default: 30)")
+    parser.add_argument("-p", "--output_prefix", help="Output path prefix (ex: sample1)")
     parser.add_argument("-D", "--gmap_db_path", help="GMAP database location (optional)")
     parser.add_argument("-d", "--gmap_species", help="GMAP species name (optional)")
     parser.add_argument("--small_genome", action="store_true", default=False, help="Genome size is smaller than 3GB (use gmap instead of gmapl)")
@@ -293,6 +302,11 @@ if __name__ == "__main__":
 
     cc_settings.EXPECTED_ERR_RATE = args.expected_error_rate
     cc_settings.NX_CYCLE_DETECTION = args.nx_cycle_detection
+
+    if args.output_prefix is None:
+        cc_settings.OUTPUT_PREFIX = binascii.b2a_hex(os.urandom(3))
+    else:
+        cc_settings.OUTPUT_PREFIX = args.output_prefix
 
 
 

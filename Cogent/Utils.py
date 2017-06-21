@@ -45,8 +45,12 @@ def post_gmap_processing(db_name='cogent', gff_filename='in.trimmed.fa.gff', out
         log.warning("[BUG] good_for in post_gmap_processing is empty. Probably from cycles. CHECK!")
     else:
         N = max(max(v) for v in good_for.itervalues())+1
-        prob = make_into_lp_problem(good_for.items(), N)
-        prob.solve()
+        try:
+            prob = make_into_lp_problem(good_for.items(), N, add_noise=False)
+            prob.solve()
+        except:
+            prob = make_into_lp_problem(good_for.items(), N, add_noise=True)
+            prob.solve()
         for v in prob.variables():
             log.debug("{0} = {1}".format(v.name, v.varValue))
             if v.varValue == 1: touse.append(int(v.name))
