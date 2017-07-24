@@ -27,4 +27,4 @@ setup(name='Cogent',
                'Cogent/reconstruct_contig.py',
                'Cogent/generate_batch_cmd_for_Cogent_reconstruction.py',
                'Cogent/generate_batch_cmd_for_Cogent_family_finding.py'
-     )
+     ])
