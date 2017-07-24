@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-version = '1.9'
+version = '2.0'
 
 setup(name='Cogent',
       version=version,
@@ -25,5 +25,6 @@ setup(name='Cogent',
                'Cogent/process_kmer_to_graph.py',
                'Cogent/gff3_to_collapsed.py',
                'Cogent/reconstruct_contig.py',
-               'Cogent/generate_cmds_for_cogent.py',],
+               'Cogent/generate_batch_cmd_for_Cogent_reconstruction.py',
+               'Cogent/generate_batch_cmd_for_Cogent_family_finding.py'
      )

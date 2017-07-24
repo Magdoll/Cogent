@@ -24,15 +24,16 @@ def run_ncut(G, labels2_map, ncut_map, nodelist, ncut_threshold):
         G.number_of_nodes(), len(set(labels2)), time.time()-start_t)
 
 
-def write_output_dirs(labels2_map, seqdict, weightdict, output_prefix):
+def write_output_dirs(labels2_map, seqdict, weightdict, output_dir, output_prefix):
     """
-    For each partition, create <output_prefix>/<partition>/in.fa and in.weights
+    For each partition, create <output_dir>/<output_prefix>_<partition>/in.fa and in.weights
     """
     output_dirs = []
     # make the directory and the subdirs
-    os.makedirs(output_prefix)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     for ncut_label, members in labels2_map.iteritems():
-        d2 = os.path.join(output_prefix, str(ncut_label))
+        d2 = os.path.join(output_dir, output_prefix+'_'+str(ncut_label))
         os.makedirs(d2)
         output_dirs.append(d2)
         with open(os.path.join(d2, 'in.fa'), 'w') as f:
@@ -118,6 +119,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("fasta_filename")
     parser.add_argument("dist_filename")
+    parser.add_argument("output_dir")
     parser.add_argument("output_prefix")
     parser.add_argument("-c", "--count_filename", help="Count filename (if not given, assume all weight is 1)")
     parser.add_argument("--sim_threshold", default=0.05, type=float, help="similarity threshold (default: 0.05)")
@@ -134,9 +136,8 @@ if __name__ == "__main__":
         print >> sys.stderr, "Mash dist filename {0} does not exist. Abort.".format(args.dist_filename)
         sys.exit(-1)
 
-    if os.path.exists(args.output_prefix):
-        print >> sys.stderr, "Output directory {0} already exists. Not OK! Abort!".format(args.output_prefix)
-        sys.exit(-1)
+    if os.path.exists(args.output_dir):
+        print >> sys.stderr, "WARNING: Output directory {0} already exists".format(args.output_dir)
 
 
     seqdict = dict((r.id.split()[0], r) for r in SeqIO.parse(open(args.fasta_filename),'fasta'))
@@ -152,4 +153,4 @@ if __name__ == "__main__":
     labels2_map = family_finding(args.dist_filename, seqdict, args.output_prefix, \
                                  has_pbid=False, weight_threshold=args.sim_threshold, \
                                  ncut_threshold=args.ncut_threshold)
-    write_output_dirs(labels2_map, seqdict, weightdict, args.output_prefix)
+    write_output_dirs(labels2_map, seqdict, weightdict, args.output_dir, args.output_prefix)
