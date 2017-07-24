@@ -81,7 +81,7 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False, weight
         f.write("Partition\tSize\tMembers\n")
         for k,v in labels2_map.iteritems():
             print >> sys.stderr, k,v
-            f.write("{0}\t{1}\t{2}\n".format(k, len(v), ",".join(v)))
+            f.write("{0}_{1}\t{2}\t{3}\n".format(output_prefix, k, len(v), ",".join(v)))
             for seqid in v:
                 seqid_unassigned.remove(seqid)
         f.write("#unassigned:{0}\n".format(",".join(seqid_unassigned)))
