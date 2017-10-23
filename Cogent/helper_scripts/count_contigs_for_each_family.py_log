@@ -1,14 +1,14 @@
 # IPython log file
 
-import GFF
+import cupcake.io.GFF as GFF
 import tally_Cogent_results as sp
 import sys
 import os
 import glob
 
-cogent_dir = 'oneal_k30'
-genome1 = 'blueberry_jersey_Falcon'
-genome2 = 'blueberry_illumina'
+cogent_dir = 'gonzo'
+genome1 = 'gonzo_falcon'
+genome2 = 'gonzo_falcon'
 
 dirs = filter(lambda x: os.path.isdir(x) and os.path.exists(os.path.join(x,'COGENT.DONE')), glob.glob(cogent_dir+'/*'))
 

@@ -77,10 +77,10 @@ def run_gmap_for_final_GFFs(small_genome=False, gmap_db_path='~/share/gmap_db_ne
         prog = 'gmap'
     else:
         prog = 'gmapl'
-    cmd = prog + " -D {p} -d {sp} -f gff3_gene -n 0 {o}.fa > {o}.fa.{sp}.gff".format(\
+    cmd = prog + " -D {p} -d {sp} -f gff3_gene --cross-species --max-intronlength-ends 200000 -n 0 {o}.fa > {o}.fa.{sp}.gff".format(\
         p=gmap_db_path, sp=species_db, o=output)
     run_external_call(cmd)
-    cmd = prog + " -D {p} -d {sp} -f gff3_gene -n 0 {i} > {i}.{sp}.gff".format(\
+    cmd = prog + " -D {p} -d {sp} -f gff3_gene --cross-species --max-intronlength-ends 200000 -n 0 {i} > {i}.{sp}.gff".format(\
         p=gmap_db_path, sp=species_db, i=input)
     run_external_call(cmd)
     cmd = "gmap_build -D . -d {o} {o}.fa".format(o=output)

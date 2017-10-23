@@ -33,12 +33,13 @@ class TestCogent(unittest.TestCase):
         # check that the ncut result is consistent
         for k,v in labels2_map.iteritems():
             assert set(v) == set(data.labels2_map[k])
-        output_dirs = write_output_dirs(labels2_map, seqdict, weightdict, output_prefix)
+        output_dirs = write_output_dirs(labels2_map, seqdict, weightdict, d, output_prefix)
 
 
         for o in output_dirs:
             os.chdir(o)
-            i = int(os.path.basename(o))
+            i = os.path.basename(o) # ex: human_test.k30_0
+            i = int(i[i.rfind('_')+1:])
             subprocess.check_call("reconstruct_contig.py .", shell=True)
             assert os.path.exists('cogent2.fa')
             result = SeqIO.to_dict(SeqIO.parse(open('cogent2.fa'), 'fasta'))

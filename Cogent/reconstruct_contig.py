@@ -267,6 +267,9 @@ def main():
         dirs = split_files(input_filename='in.fa', split_size=cc_settings.MAX_SPLIT_IN_SIZE)
         run_Cogent_on_split_files(dirs, depth=0)
 
+    # align input to cogent2 gmap db so we can use it for evalution later;
+    run_gmap(dbname='cogent2', infile='in.trimmed.fa')
+
     # clean up GMAP db files
     if os.path.exists('cogent') and os.path.isdir('cogent'):
         cleanup_gmap('cogent')

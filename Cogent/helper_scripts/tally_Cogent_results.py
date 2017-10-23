@@ -1,5 +1,5 @@
 import os, sys
-import GFF
+import cupcake.io.GFF as GFF
 from Bio import SeqIO
 from collections import defaultdict
 
