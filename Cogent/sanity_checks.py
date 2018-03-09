@@ -23,6 +23,13 @@ def sanity_check_gmapl_exists():
                              "Please install a newer version of GMAP and try again."
         sys.exit(-1)
 
+def sanity_check_minimap2_exists():
+    try:
+        run_external_call("minimap2 --version")
+    except:
+        print >> sys.stderr, "minimap2 executable does not exist. Please install minimap2 first!"
+        sys.exit(-1)
+
 def sanity_check_fasta(fasta_filename):
     """
     Check that all sequences are A/T/C/G

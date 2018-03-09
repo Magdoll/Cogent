@@ -12,9 +12,10 @@ from Cogent.__init__ import get_version
 from Cogent import settings as cc_settings
 from Cogent import sanity_checks, splice_cycle
 from Cogent import splice_graph as sp
-from Cogent.Utils import trim_ends, run_external_call, run_gmap, cleanup_gmap, post_gmap_processing, run_gmap_for_final_GFFs
+from Cogent.Utils import trim_ends, run_external_call, \
+    run_minimap2, post_minimap2_processing, run_minimap2_for_final_SAM
 from Cogent.process_path import solve_with_lp_and_reduce, find_minimal_path_needed_to_explain_pathd
-from Cogent.sanity_checks import sanity_check_gmapl_exists, sanity_check_path_all_valid
+from Cogent.sanity_checks import sanity_check_path_all_valid, sanity_check_minimap2_exists
 
 
 class CycleDetectedException(Exception):
@@ -69,11 +70,6 @@ def run_Cogent_on_split_files(split_dirs, depth):
             os.chdir(olddir)
             continue
         run_Cogent_on_input()
-        # clean up cogent in the split dir
-        if os.path.exists('cogent') and os.path.isdir('cogent'):
-            cleanup_gmap('cogent')
-        if os.path.exists('cogent2') and os.path.isdir('cogent2'):
-            cleanup_gmap('cogent2')
         os.chdir(olddir)
 
     if os.path.exists('combined'):
@@ -112,15 +108,13 @@ def run_Cogent_on_split_files(split_dirs, depth):
     run_external_call("ln -s ../combined/cogent2.fa cogent.fa")
     run_external_call("ln -s ../in.weights in.weights")
     run_external_call("ln -s ../in.trimmed.fa in.trimmed.fa")
-    run_gmap()
-    post_gmap_processing(seqrecs=[r for r in SeqIO.parse(open('in.trimmed.fa'), 'fasta')])
+    sam_file = run_minimap2('cogent.fa', 'in.trimmed.fa', 'SAM')
+    post_minimap2_processing('cogent.fa', sam_file, 'cogent2', seqrecs=[r for r in SeqIO.parse(open('in.trimmed.fa'), 'fasta')])
     os.chdir('../')
 
     # now the result we want is in combined/cogent2.fa, do postprocessing on it with the full in.fa
-
     run_external_call("ln -f -s post_combined/cogent2.fa cogent2.fa")
-    run_gmap(dbname='cogent2', infile='in.trimmed.fa')
-    #post_gmap_processing()
+    run_minimap2('cogent2.fa', 'in.trimmed.fa', format='SAM')
 
     time4 = time.time()
     log.info("[RUNTIME] Total time in run_Cogent: {0}".format(time4-time1))
@@ -241,8 +235,8 @@ def run_Cogent_on_input():
 
     time3 = time.time()
 
-    run_gmap()
-    post_gmap_processing(seqrecs=seqrecs)
+    sam_file = run_minimap2('cogent.fa', 'in.trimmed.fa', format='SAM')
+    post_minimap2_processing('cogent.fa', sam_file, 'cogent2', seqrecs=seqrecs)
 
     time4 = time.time()
 
@@ -267,14 +261,8 @@ def main():
         dirs = split_files(input_filename='in.fa', split_size=cc_settings.MAX_SPLIT_IN_SIZE)
         run_Cogent_on_split_files(dirs, depth=0)
 
-    # align input to cogent2 gmap db so we can use it for evalution later;
-    run_gmap(dbname='cogent2', infile='in.trimmed.fa')
-
-    # clean up GMAP db files
-    if os.path.exists('cogent') and os.path.isdir('cogent'):
-        cleanup_gmap('cogent')
-    if os.path.exists('cogent2') and os.path.isdir('cogent2'):
-        cleanup_gmap('cogent2')
+    # align input to cogent2 so we can use it for evaluation later;
+    run_minimap2(ref='cogent2.fa', infile='in.trimmed.fa', format='SAM')
 
 
     # rewrite cogent2.fa with prefix
@@ -292,9 +280,8 @@ if __name__ == "__main__":
     parser.add_argument("--nx_cycle_detection", default=False, action="store_true", help="Cycle detection using networkx (default: off), will increase run-time. Recommend for debugging failed cases only.")
     parser.add_argument("-k", "--kmer_size", type=int, default=30, help="kmer size (default: 30)")
     parser.add_argument("-p", "--output_prefix", help="Output path prefix (ex: sample1)")
-    parser.add_argument("-D", "--gmap_db_path", help="GMAP database location (optional)")
-    parser.add_argument("-d", "--gmap_species", help="GMAP species name (optional)")
-    parser.add_argument("--small_genome", action="store_true", default=False, help="Genome size is smaller than 3GB (use gmap instead of gmapl)")
+    parser.add_argument("-G", "--genome_fasta_mmi", default=None, help="Optional genome fasta or mmi (ex: genome.fasta or genome.mmi). If provided, Cogent output will be mapped to the genome using minimap2.")
+    parser.add_argument("-S", "--species_name", default="NA", help="Species name (optional, only used if genome fasta/mmi provided).")
     parser.add_argument('--version', action='version', version='%(prog)s ' + str(get_version()))
     parser.add_argument("--debug", action="store_true", default=False)
 
@@ -312,9 +299,7 @@ if __name__ == "__main__":
         cc_settings.OUTPUT_PREFIX = args.output_prefix
 
 
-
-    if not args.small_genome:
-        sanity_check_gmapl_exists()
+    sanity_check_minimap2_exists()
 
     log = logging.getLogger('Cogent')
     if args.debug:
@@ -357,6 +342,6 @@ if __name__ == "__main__":
 
     os.system("touch COGENT.DONE")
 
-    if args.gmap_db_path is not None and args.gmap_species is not None:
-        run_gmap_for_final_GFFs(small_genome=args.small_genome, gmap_db_path=args.gmap_db_path, species_db=args.gmap_species)
 
+    if args.genome_fasta_mmi is not None:
+        run_minimap2_for_final_SAM(input="in.trimmed.fa", output="cogent2.fa", ref=args.genome_fasta_mmi, species_name=args.species_name)

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 __author__ = 'etseng@pacb.com'
 
 import os, sys
@@ -18,10 +19,8 @@ def main(args):
         cmd = "reconstruct_contig.py " + d2
         # use the directory name as output prefix
         cmd += " -p {0} ".format(os.path.basename(d2))
-        if args.gmap_db_path is not None and args.gmap_species is not None:
-            cmd += " -D {0} -d {1}".format(args.gmap_db_path, args.gmap_species)
-        if args.small_genome:
-            cmd += " --small_genome"
+        if args.genome_fasta_mmi is not None:
+            cmd += " -G {0} -S {1} ".format(args.genome_fasta_mmi, args.species_name)
         print cmd
 
 
@@ -30,9 +29,8 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument("dirname")
-    parser.add_argument("-D", "--gmap_db_path", help="GMAP database location, optional (ex: ~/share/gmap_db_new)")
-    parser.add_argument("-d", "--gmap_species", help="GMAP species name, optinal (ex: hg19)")
-    parser.add_argument("--small_genome", action="store_true", default=False, help="Genome size is smaller than 3GB (use gmap instead of gmapl)")
+    parser.add_argument("-G", "--genome_fasta_mmi", default=None, help="Optional genome fasta or mmi (ex: genome.fasta or genome.mmi). If provided, Cogent output will be mapped to the genome using minimap2.")
+    parser.add_argument("-S", "--species_name", default="NA", help="Species name (optional, only used if genome fasta/mmi provided).")
 
     args = parser.parse_args()
 
