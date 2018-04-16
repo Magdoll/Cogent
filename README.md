@@ -1,6 +1,6 @@
 # Cogent: COding GENome reconstruction Tool
 
-Current version: 3.1
+Current version: 3.2
 
 Cogent is a tool for reconstructing the coding genome using high-quality full-length transcriptome sequences. It is designed to be used on [Iso-Seq data](https://github.com/PacificBiosciences/cDNA_primer/wiki) and in cases where there is no reference genome or the ref genome is highly incomplete. 
 
@@ -12,6 +12,9 @@ Please see [wiki](https://github.com/Magdoll/Cogent/wiki) for details on usage.
 
 
 ## version updates
+
+2018.04.16 updated to version 3.2. Fixed edge case in untangling homopolymer.
+
 2018.03.09 updated to version 3.1. Replaced all GMAP with minimap2!! Rest of the algorithm remains same, but selection of final cogent2 (from cogent.fa) now can be different. Increased cogent -> cogent2 selection stringency to >= 98% cov AND >= 98% identity.
 
 2017.10.23 updated to version 2.1. Fixed test. 

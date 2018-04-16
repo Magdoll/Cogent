@@ -90,9 +90,17 @@ def untangle_homopolymer_helper(G, path_d, mermap, seqweights, node):
                             homo_rev_mermap[newmer] = newnode
                             mermap[newnode] = newmer
                         if i > 0:
-                            G.add_edge(path[i-1], newnode, weight=weight)
+                            s, t = path[i-1], newnode
+                            if G.has_edge(s, t):
+                                G[s][t]['weight'] += weight
+                            else:
+                                G.add_edge(path[i-1], newnode, weight=weight)
                         if j < len(path):
-                            G.add_edge(newnode, path[j], weight=weight)
+                            s, t = newnode, path[j]
+                            if G.has_edge(s, t):
+                                G[s][t]['weight'] += weight
+                            else:
+                                G.add_edge(newnode, path[j], weight=weight)
 
                         #### DEBUG ####
                         if DEBUG_FLAG:

@@ -10,9 +10,9 @@ cc.KMER_SIZE = 30
 
 from Cogent import sanity_checks, splice_cycle
 from Cogent import splice_graph as sp
-from Cogent.Utils import trim_ends, run_external_call, run_gmap, post_gmap_processing, run_gmap_for_final_GFFs
+from Cogent.Utils import run_external_call, run_minimap2, post_minimap2_processing, run_minimap2_for_final_SAM
 from Cogent.process_path import solve_with_lp_and_reduce, find_minimal_path_needed_to_explain_pathd
-from Cogent.sanity_checks import sanity_check_gmapl_exists, sanity_check_path_all_valid
+from Cogent.sanity_checks import sanity_check_path_all_valid
 
 sp.KMER_SIZE = cc.KMER_SIZE
 
@@ -52,11 +52,13 @@ raw_input("before homo")
 # resolve all homopolymers
 homo_nodes = filter(lambda n: G.has_edge(n, n), G.nodes_iter())
 for n in homo_nodes:
-    sp.untangle_homopolymer_helper(G, path_d, mermap, n)
+    sp.untangle_homopolymer_helper(G, path_d, mermap, seqweights, n)
 
+assert sanity_check_path_all_valid(path_d, G)
 raw_input("before cycle detection")
 
-splice_cycle.detect_and_replace_cycle(G, path_d, seqweights, mermap, max(G.nodes()), sp.KMER_SIZE)
+splice_cycle.detect_and_replace_cycle(G, path_d, seqweights, mermap, max(G.nodes()), sp.KMER_SIZE, cc.DEBUG_FLAG)
+assert sanity_check_path_all_valid(path_d, G)
 
 raw_input("after cycle detection")
 
