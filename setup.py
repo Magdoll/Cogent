@@ -2,21 +2,20 @@
 
 from setuptools import setup, find_packages
 
-version = '3.2'
+version = '3.3'
 
 setup(name='Cogent',
       version=version,
       description='COding GENome reconstruction Tool using transcript sequences',
       author='Elizabeth Tseng',
       author_email='etseng@pacb.com',
-#      install_requires=[
-#          'numpy',
-#          'networkx==1.10',
-#          'scikit-image>=0.11.3',
-#          'pulp',
-#          'biopython',
-#          'bx-python'
-#      ],
+      install_requires=[
+          'numpy',
+          'networkx==1.10',
+          'scikit-image>=0.11.3',
+          'pulp',
+          'biopython',
+          'bx-python==0.7.3'     ],
       packages=['Cogent', 'Cogent.test'],
       package_dir = {'Cogent':'Cogent'},
       zip_safe=False,

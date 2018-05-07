@@ -435,7 +435,21 @@ def find_bubbles(G, path_d, mermap):
         return path_finder(G, n2, pred, [n2], 2)
 
     def replace_node(n_to_del, n_to_replace_with):
+        """
+        Replacing <n_to_del> with <n_to_replace_with>
+        1. add successors of <n_to_del> to successor of <n_to_replace_with>
+
+           ex: n' -> n1 -> n3
+               n' -> n2 -> n3
+               n' -> n1 -> n4
+           (make sure to add n2 -> n4 if not already exists)
+        2. remove <n_to_del> from graph G
+        3. replace all existence of <n_to_del> in path_d
+        """
         #pdb.set_trace()
+        for n in G.successors_iter(n_to_del):
+            if not G.has_edge(n_to_replace_with, n):
+                G.add_edge(n_to_replace_with, n)
         G.remove_node(n_to_del)
         del mermap[n_to_del]
         for k in path_d:
