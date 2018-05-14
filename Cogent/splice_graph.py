@@ -284,17 +284,17 @@ def collapse_chain(G, chain, mermap, path_d):
 
 
 
-def reachability(G, mermap, visited,  path_d):
+def reachability(G, mermap, visited,  path_d, debug=False):
     """
     Find all unipaths and contract them!
     G must NOT have cycles so we can successfully traverse through all of them!
     """
     sources = filter(lambda n: G.in_degree(n)==0, G.nodes_iter())
     for source in sources:
-        reachability_helper(G, source, [], visited, mermap, path_d)
+        reachability_helper(G, source, [], visited, mermap, path_d, debug)
 
 
-def reachability_helper(G, cur, chain, visited, mermap, path_d):
+def reachability_helper(G, cur, chain, visited, mermap, path_d, debug=False):
     """
     a chain started must have outdeg = 1  (indeg does not matter)
     a chain ender must have indeg = 1  (outdeg does not matter)
@@ -302,6 +302,7 @@ def reachability_helper(G, cur, chain, visited, mermap, path_d):
     """
     if cur in visited:
         if len(chain) >= 2:
+            if debug: pdb.set_trace()
             log.debug("chain found! {0}".format(chain + [cur]))
             collapse_chain(G, chain+[cur], mermap, path_d)
         return
@@ -313,22 +314,28 @@ def reachability_helper(G, cur, chain, visited, mermap, path_d):
         if outdeg == 0 or outdeg > 1:
             # chain ender
             if len(chain) >= 2:
+                if debug: pdb.set_trace()
                 log.debug("chain found! {0}".format(chain + [cur]))
                 collapse_chain(G, chain+[cur], mermap, path_d)
             # start another possible chain, does not include itself because outdeg is not 1
             for n in G.successors_iter(cur):
-                reachability_helper(G, n, [], visited, mermap, path_d)
+                reachability_helper(G, n, [], visited, mermap, path_d, debug)
         else: # outdeg == 1, continue the chain
-            reachability_helper(G, G.successors_iter(cur).next(), chain + [cur], visited, mermap, path_d)
+            reachability_helper(G, G.successors_iter(cur).next(), chain + [cur], visited, mermap, path_d, debug)
     elif outdeg == 1: # indeg is 0 or > 1, outdeg == 1
-        if len(chain) >= 2:
+        if indeg == 1 and len(chain) >= 2:
+            if debug: pdb.set_trace()
             log.debug("chain found! {0}".format(chain + [cur]))
             collapse_chain(G, chain+[cur], mermap, path_d)
+        elif indeg > 1 and len(chain) >= 2:
+            if debug: pdb.set_trace()
+            log.debug("chain found! {0}".format(chain)) # exclude itself
+            collapse_chain(G, chain, mermap, path_d)
         # possible chain starter, includes itself becuz outdeg is 1
-        reachability_helper(G, G.successors_iter(cur).next(), [cur], visited, mermap, path_d)
+        reachability_helper(G, G.successors_iter(cur).next(), [cur], visited, mermap, path_d, debug)
     else: # outdeg!=1, indeg!=1
         for n in G.successors_iter(cur):
-            reachability_helper(G, n, [], visited, mermap, path_d)
+            reachability_helper(G, n, [], visited, mermap, path_d, debug)
 
 
 def find_source_bubbles(G, path_d, mermap):
@@ -449,7 +456,7 @@ def find_bubbles(G, path_d, mermap):
         #pdb.set_trace()
         for n in G.successors_iter(n_to_del):
             if not G.has_edge(n_to_replace_with, n):
-                G.add_edge(n_to_replace_with, n)
+                G.add_edge(n_to_replace_with, n, weight=G.get_edge_data(n_to_del, n)['weight'])
         G.remove_node(n_to_del)
         del mermap[n_to_del]
         for k in path_d:

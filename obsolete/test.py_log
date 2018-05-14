@@ -5,7 +5,7 @@ import networkx as nx
 
 from Cogent import settings as cc
 cc.DEBUG_FLAG = True
-cc.KMER_SIZE = 30
+cc.KMER_SIZE = 100
 
 
 from Cogent import sanity_checks, splice_cycle
@@ -76,7 +76,9 @@ for k,v in path_d.iteritems():
 #    sys.exit(-1)
 
 visited = {}
-sp.reachability(G, mermap, visited, path_d)
+sp.reachability(G, mermap, visited, path_d, cc.DEBUG_FLAG)
+raw_input("reachability")
+assert sanity_check_path_all_valid(path_d, G)
 
 nx.write_graphml(G, 'in.0.graphml')
 
