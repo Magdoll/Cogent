@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-version = '3.4'
+version = '3.5'
 
 setup(name='Cogent',
       version=version,

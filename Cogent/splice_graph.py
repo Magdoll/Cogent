@@ -264,7 +264,7 @@ def collapse_chain(G, chain, mermap, path_d):
         newp = []   # use this to hold the first part of the path
         newp2 = []  # use this to hold the second part of the path
         for i,x in enumerate(oldp):
-            if x not in chain: newp.append(x)
+            if x not in chain[:-1]: newp.append(x)
             else: # first encounter of something in chain
                 break
         for j in xrange(len(oldp)-1, i-1, -1):
@@ -323,14 +323,14 @@ def reachability_helper(G, cur, chain, visited, mermap, path_d, debug=False):
         else: # outdeg == 1, continue the chain
             reachability_helper(G, G.successors_iter(cur).next(), chain + [cur], visited, mermap, path_d, debug)
     elif outdeg == 1: # indeg is 0 or > 1, outdeg == 1
-        if indeg == 1 and len(chain) >= 2:
+        if indeg >= 1 and len(chain) >= 2:
             if debug: pdb.set_trace()
             log.debug("chain found! {0}".format(chain + [cur]))
             collapse_chain(G, chain+[cur], mermap, path_d)
-        elif indeg > 1 and len(chain) >= 2:
-            if debug: pdb.set_trace()
-            log.debug("chain found! {0}".format(chain)) # exclude itself
-            collapse_chain(G, chain, mermap, path_d)
+        #elif indeg > 1 and len(chain) >= 2:
+        #    if debug: pdb.set_trace()
+        #    log.debug("chain found! {0}".format(chain)) # exclude itself
+        #    collapse_chain(G, chain, mermap, path_d)
         # possible chain starter, includes itself becuz outdeg is 1
         reachability_helper(G, G.successors_iter(cur).next(), [cur], visited, mermap, path_d, debug)
     else: # outdeg!=1, indeg!=1
