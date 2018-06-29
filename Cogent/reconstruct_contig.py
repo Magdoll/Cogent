@@ -152,7 +152,7 @@ def run_Cogent_on_input():
             seqweights[seqid] = int(weight)
 
     adjusted_kmer = splice_cycle.precycle_kmer_adjustment(cc_settings.KMER_SIZE)
-    if adjusted_kmer != cc_settings.KMER_SIZE:
+    if adjusted_kmer > cc_settings.KMER_SIZE:
         log.info("Adjusting k-mer size to: {0}".format(adjusted_kmer))
         cc_settings.KMER_SIZE = adjusted_kmer
 
@@ -186,7 +186,7 @@ def run_Cogent_on_input():
         for x in v:
             if v.count(x) > 1:
                 log.info("CYCLE detected through path analysis! Raise CycleDetectedException!")
-                os.system("touch CYCLE_DETECTED")
+                with open("CYCLE_DETECTED", 'w') as f: pass # touch the file
                 raise CycleDetectedException
 
     if cc_settings.NX_CYCLE_DETECTION:
@@ -194,7 +194,7 @@ def run_Cogent_on_input():
         iter = nx.simple_cycles(G)
         for _it in iter:
             print >> sys.stderr, "CYCLE detected through simple_cycles! Raise CycleDetectedException!"
-            os.system("touch CYCLE_DETECTED")
+            with open("CYCLE_DETECTED", 'w') as f: pass # touch the file
             raise CycleDetectedException
 
     nx.write_graphml(G, 'in.0.graphml')
@@ -308,11 +308,10 @@ if __name__ == "__main__":
         log.setLevel(logging.INFO)
 
     # clean out the log and DONE file if there was a previous run
-    if os.path.exists("COGENT.DONE"):
-        os.remove("COGENT.DONE")
-    if os.path.exists("hello.log"):
-        os.remove('hello.log')
-
+    files_to_remove = ['COGENT.DONE', 'COGENT.FAILED', 'hello.log', 'CYCLE_DETECTED']
+    for file in files_to_remove:
+        if os.path.exists(file):
+            os.remove(file)
 
     # create a file handler
     handler = logging.FileHandler(os.path.join(args.dirname, 'hello.log'))
@@ -332,15 +331,21 @@ if __name__ == "__main__":
     log.info("Setting expected error rate to: {0}%".format(args.expected_error_rate))
 
     os.chdir(args.dirname)
+    main_success = False
     while cc_settings.KMER_SIZE <= 200:
         try:
             main()
+            main_success = True
             break
         except CycleDetectedException:
             cc_settings.KMER_SIZE += 20
             log.info("Trying to raise k={0}. Rerun attempt.".format(cc_settings.KMER_SIZE))
 
-    os.system("touch COGENT.DONE")
+    if main_success:
+        with open('COGENT.DONE', 'w') as f: pass
+    else:
+        log.info("Unable to complete reconstruction. Give up.")
+        with open('COGENT.FAILED', 'w') as f: pass
 
 
     if args.genome_fasta_mmi is not None:

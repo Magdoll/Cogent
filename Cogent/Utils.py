@@ -45,6 +45,7 @@ def post_minimap2_processing(ref='cogent.fa', sam='in.trimmed.fa.sam', output_pr
     good_for = defaultdict(lambda: [])
     reader = BioReaders.GMAPSAMReader(sam, True, query_len_dict=dict(((r.id, len(r.seq)) for r in seqrecs)))
     for r in reader:
+        if r.sID=='*': continue # not mapped
         assert r.sID.startswith('path')  # chr should be path0, path1, etc
         assert 0 < r.qCoverage <= 1
         assert 0 < r.identity <= 1
