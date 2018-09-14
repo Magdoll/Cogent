@@ -350,7 +350,7 @@ class gmapRecord:
         
         
     def add_exon(self, rStart0, rEnd1, sStart0, sEnd1, rstrand, score):
-        assert rStart0 < rEnd1 and sStart0 < sEnd1
+        assert rStart0 < rEnd1 #and sStart0 < sEnd1
         if rstrand == '-':
             assert len(self.ref_exons) == 0 or self.ref_exons[0].start >= rEnd1
             self.scores.insert(0, score)
@@ -359,8 +359,8 @@ class gmapRecord:
             assert len(self.ref_exons) == 0 or self.ref_exons[-1].end <= rStart0
             self.scores.append(score)
             self.ref_exons.append(Interval(rStart0, rEnd1))
-        if rstrand == '-':
-            self.seq_exons.insert(0, Interval(sStart0, sEnd1))
+        if sStart0 > sEnd1:
+            self.seq_exons.insert(0, Interval(sEnd1, sStart0))
         else:
             self.seq_exons.append(Interval(sStart0, sEnd1))
             

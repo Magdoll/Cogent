@@ -44,27 +44,27 @@ def read_blastn(filename, qlen_dict):
     return best_of
 
 
-# def read_cogent2_aligned_to_genome_gff(filename):
-#     """
-#     Read cogent2 mapped to a genome.
-#
-#     Return: dict of {cogent path} --> list of gmapRecord; set of mapped genome contigs
-#
-#     NOTE: (gmap was run with -n 0 so if multiple must be chimeric)
-#     """
-#     d = defaultdict(lambda: [])
-#     contigs_seen = set()
-#
-#     if not os.path.exists(filename):
-#         return {}, set()
-#
-#     try:
-#         for r in GFF.gmapGFFReader(filename):
-#             d[r.seqid].append(r)
-#             contigs_seen.add(r.chr)
-#     except IndexError:
-#         pass
-#     return dict(d), contigs_seen
+def read_cogent2_aligned_to_genome_gff(filename):
+     """
+     Read cogent2 mapped to a genome.
+
+     Return: dict of {cogent path} --> list of gmapRecord; set of mapped genome contigs
+
+     NOTE: (gmap was run with -n 0 so if multiple must be chimeric)
+     """
+     d = defaultdict(lambda: [])
+     contigs_seen = set()
+
+     if not os.path.exists(filename):
+         return {}, set()
+
+     try:
+         for r in GFF.gmapGFFReader(filename):
+             d[r.seqid].append(r)
+             contigs_seen.add(r.chr)
+     except IndexError:
+         pass
+     return dict(d), contigs_seen
 
 
 def read_cogent2_aligned_to_genome_sam(input, filename):
@@ -83,6 +83,7 @@ def read_cogent2_aligned_to_genome_sam(input, filename):
 
     try:
         for r in BioReaders.GMAPSAMReader(filename, True, query_len_dict=dict((r.id, len(r.seq)) for r in SeqIO.parse(open(input),'fasta'))):
+            if r.sID == '*': continue # unmapped
             d[r.qID].append(r)
             contigs_seen.add(r.sID)
     except IndexError:
@@ -126,9 +127,9 @@ def is_true_minimap2_chimeric(records):
     if len(by_chr) > 1: return True # on multiple chromosomes, really chimeric
     else: # all on same chromosome
         flag = False
-        records.sort(key=lambda r: r.start)
+        records.sort(key=lambda r: r.sStart)
         for i in xrange(len(records)-1):
-            if records[i].end - records[i+1].start >= 100: # overlap by more than 100 bp, true chimeric
+            if records[i].sEnd - records[i+1].sStart >= 100: # overlap by more than 100 bp, true chimeric
                 flag = True
                 break
         return flag

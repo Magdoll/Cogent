@@ -69,8 +69,12 @@ def run_Cogent_on_split_files(split_dirs, depth):
             print >> sys.stderr, "skipping {0} because done already".format(d)
             os.chdir(olddir)
             continue
-        run_Cogent_on_input()
-        os.chdir(olddir)
+        try:
+            run_Cogent_on_input()
+            os.chdir(olddir)
+        except CycleDetectedException:
+            os.chdir(olddir)
+            raise CycleDetectedException
 
     if os.path.exists('combined'):
         run_external_call("rm -rf combined")
@@ -330,10 +334,10 @@ if __name__ == "__main__":
     log.info("Setting k-mer size to: {0}".format(args.kmer_size))
     log.info("Setting expected error rate to: {0}%".format(args.expected_error_rate))
 
-    os.chdir(args.dirname)
     main_success = False
     while cc_settings.KMER_SIZE <= 200:
         try:
+            os.chdir(args.dirname)
             main()
             main_success = True
             break
