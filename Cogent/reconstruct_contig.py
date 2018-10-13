@@ -335,7 +335,8 @@ if __name__ == "__main__":
     log.info("Setting expected error rate to: {0}%".format(args.expected_error_rate))
 
     main_success = False
-    while cc_settings.KMER_SIZE <= 200:
+    max_kmer_to_try = max(200, cc_settings.KMER_SIZE)
+    while cc_settings.KMER_SIZE <= max_kmer_to_try:
         try:
             os.chdir(args.dirname)
             main()
