@@ -24,7 +24,7 @@ class CycleDetectedException(Exception):
 sys.setrecursionlimit(999999)
 
 
-def split_files(input_filename='in.fa', split_size=20):
+def split_files(input_filename='in.trimmed.fa', split_size=20):
     """
     Split input files into split_0/in.fa, split_1/in.fa...
     Return the list of split directories
@@ -34,7 +34,7 @@ def split_files(input_filename='in.fa', split_size=20):
     d = "split_0"
     if not os.path.exists(d):
         os.makedirs(d)
-    f = open(os.path.join(d, 'in.fa'), 'w')
+    f = open(os.path.join(d, 'in.trimmed.fa'), 'w')
     split_dirs = [d]
     run_external_call("cp in.weights {0}/in.weights".format(d))
 
@@ -48,7 +48,7 @@ def split_files(input_filename='in.fa', split_size=20):
                 os.makedirs(d)
             split_dirs.append(d)
             run_external_call("cp in.weights {0}/in.weights".format(d))
-            f = open(os.path.join(d, 'in.fa'), 'w')
+            f = open(os.path.join(d, 'in.trimmed.fa'), 'w')
         f.write(">{0}\n{1}\n".format(r.id, r.seq))
         count += 1
     f.close()
@@ -80,7 +80,7 @@ def run_Cogent_on_split_files(split_dirs, depth):
         run_external_call("rm -rf combined")
     os.makedirs('combined')
     # now combine all the cogent2 results and pretend they are the "INPUT"
-    f = open('combined/in.fa', 'w')
+    f = open('combined/in.trimmed.fa', 'w')
     f2 = open('combined/in.weights', 'w')
     i = 0
     for d in split_dirs:
@@ -93,17 +93,10 @@ def run_Cogent_on_split_files(split_dirs, depth):
 
     os.chdir('combined')
     if i > cc_settings.MAX_POST_SPLIT_IN_SIZE and depth < cc_settings.MAX_RECUR_DEPTH:
-        dirs = split_files(input_filename='in.fa', split_size=cc_settings.MAX_POST_SPLIT_IN_SIZE)
+        dirs = split_files(input_filename='in.trimmed.fa', split_size=cc_settings.MAX_POST_SPLIT_IN_SIZE)
         run_Cogent_on_split_files(dirs, depth+1)
     run_Cogent_on_input()
     os.chdir('../')
-
-    # now take the output from combined and run LP against it,
-    # using the real input this time
-
-    with open('in.trimmed.fa', 'w') as f:
-        for r in SeqIO.parse(open('in.fa'), 'fasta'):
-            f.write(">{0}\n{1}\n".format(r.id, trim_ends(str(r.seq))))
 
     if os.path.exists('post_combined'):
         run_external_call("rm -rf post_combined")
@@ -142,12 +135,6 @@ def run_Cogent_on_input():
         cur soln: fall back to using own paths (still wrong)
     """
     time1 = time.time()
-    # first trim in.fa away all lower case
-    f = open('in.trimmed.fa', 'w')
-    for r in SeqIO.parse(open('in.fa'),'fasta'):
-        f.write(">{0}\n{1}\n".format(r.id, trim_ends(str(r.seq))))
-    f.close()
-
     seqweights = {}
     # read in the weights for each sequence
     with open('in.weights') as f:
@@ -262,7 +249,7 @@ def main():
     if num_size <= cc_settings.MAX_SPLIT_IN_SIZE:
         run_Cogent_on_input()
     else:
-        dirs = split_files(input_filename='in.fa', split_size=cc_settings.MAX_SPLIT_IN_SIZE)
+        dirs = split_files(input_filename='in.trimmed.fa', split_size=cc_settings.MAX_SPLIT_IN_SIZE)
         run_Cogent_on_split_files(dirs, depth=0)
 
     # align input to cogent2 so we can use it for evaluation later;
@@ -286,6 +273,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--output_prefix", help="Output path prefix (ex: sample1)")
     parser.add_argument("-G", "--genome_fasta_mmi", default=None, help="Optional genome fasta or mmi (ex: genome.fasta or genome.mmi). If provided, Cogent output will be mapped to the genome using minimap2.")
     parser.add_argument("-S", "--species_name", default="NA", help="Species name (optional, only used if genome fasta/mmi provided).")
+    parser.add_argument("--dun_trim_sequence", default=False, action="store_true", help="Don't trim away lower case bases of the input sequences (default: off)")
     parser.add_argument('--version', action='version', version='%(prog)s ' + str(get_version()))
     parser.add_argument("--debug", action="store_true", default=False)
 
@@ -334,6 +322,17 @@ if __name__ == "__main__":
     log.info("Setting k-mer size to: {0}".format(args.kmer_size))
     log.info("Setting expected error rate to: {0}%".format(args.expected_error_rate))
 
+    if args.dun_trim_sequence:
+        log.info("Trim input lower bases=FALSE.")
+        f = open('in.trimmed.fa', 'w')
+        for r in SeqIO.parse(open('in.fa'),'fasta'):
+            f.write(">{0}\n{1}\n".format(r.id, str(r.seq).upper()))
+        f.close()
+    else:
+        log.info("Trim input lower bases=TRUE.")
+        f = open('in.trimmed.fa', 'w')
+        for r in SeqIO.parse(open('in.fa'),'fasta'): f.write(">{0}\n{1}\n".format(r.id, trim_ends(str(r.seq))))
+        f.close()
     main_success = False
     max_kmer_to_try = max(200, cc_settings.KMER_SIZE)
     while cc_settings.KMER_SIZE <= max_kmer_to_try:

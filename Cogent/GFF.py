@@ -1,4 +1,4 @@
-import sys
+import os, re, sys
 import pdb
 from bx.intervals.intersection import Interval
 from bx.intervals.intersection import IntervalNode
@@ -39,10 +39,13 @@ class GTF:
             start0, end1 = int(raw[3])-1, int(raw[4])
             gtype, gstat = 'NA', 'NA'
             gName = 'NA'
+            tSupportLevel = 'NA'
             gtags = []
             for stuff in raw[8].split('; '):
                 _a, _b = stuff.split(None, 1)
                 if _a == "transcript_id": tID = _b[1:-1] # removing quotes ""
+                elif _a == "transcript_name": tName = _b[1:-1] # removing quotes
+                elif _a == "transcript_support_level": tSupportLevel = _b[1:-1]
                 elif _a == 'gene_name': gName = _b[1:-1]
                 elif _a == "gene_id": gID = _b[1:-1] # removing quotes ""
                 elif _a == "gene_type": gtype = _b[1:-1]
@@ -51,12 +54,13 @@ class GTF:
                 
             if type == 'transcript':
                 self.genome[chr].insert(start0, end1, tID)
-                self.transcript_info[tID] = {'chr':chr, 'gname':gName, 'gid':gID, 'type': gtype, 'status': gstat, 'strand': strand, 'tags': gtags}
+                self.transcript_info[tID] = {'chr':chr, 'gname':gName, 'gid':gID, 'type': gtype, 'status': gstat, 'strand': strand, 'tags': gtags, 'tname':tName, 'tlevel': tSupportLevel}
                 ith = 0
             elif type == 'exon':
                 self.transcript[tID].insert(start0, end1, {'ith':ith,'chr':chr})
                 self.exon[(start0,end1)].append((tID, ith, chr))
                 ith += 1
+
         
     def get_exons(self, tID):
         """
@@ -322,6 +326,7 @@ class gmapRecord:
         self.seqid = seqid
         self.ref_exons = []
         self.seq_exons = []
+        self.cds_exons = []
         self.scores = []
         
     def __str__(self):
@@ -348,9 +353,13 @@ class gmapRecord:
     
     def get_end(self): return self.ref_exons[-1].end
         
-        
+
+    def add_cds_exon(self, start, end):
+        self.cds_exons.append(Interval(start, end))
+
+
     def add_exon(self, rStart0, rEnd1, sStart0, sEnd1, rstrand, score):
-        assert rStart0 < rEnd1 #and sStart0 < sEnd1
+        assert rStart0 < rEnd1 and sStart0 < sEnd1
         if rstrand == '-':
             assert len(self.ref_exons) == 0 or self.ref_exons[0].start >= rEnd1
             self.scores.insert(0, score)
@@ -359,16 +368,22 @@ class gmapRecord:
             assert len(self.ref_exons) == 0 or self.ref_exons[-1].end <= rStart0
             self.scores.append(score)
             self.ref_exons.append(Interval(rStart0, rEnd1))
-        if sStart0 > sEnd1:
-            self.seq_exons.insert(0, Interval(sEnd1, sStart0))
+        if rstrand == '-':
+            self.seq_exons.insert(0, Interval(sStart0, sEnd1))
         else:
             self.seq_exons.append(Interval(sStart0, sEnd1))
             
     
-class gmapGFFReader:
+class gmapGFFReader(object):
     def __init__(self, filename):
         self.filename = filename
         self.f = open(filename)
+        # read through possible header
+        while True:
+            cur = self.f.tell()
+            if not self.f.readline().startswith('#') or self.f.tell()==cur: # first non-# seen or EOF
+                self.f.seek(cur)
+                break
         
     def __iter__(self):
         return self
@@ -400,6 +415,9 @@ class gmapGFFReader:
             line = self.f.readline().strip()
             raw = line.strip().split('\t')
         
+        if len(raw) == 0 or raw[0]=='': 
+            raise StopIteration, "EOF reached!!"
+
         assert raw[2] == 'gene'
         raw = self.f.readline().strip().split('\t')
         assert raw[2] == 'mRNA'
@@ -417,7 +435,7 @@ class gmapGFFReader:
         cds_seq_end = None
         while True:
             line = self.f.readline().strip()
-            if line.startswith('###'):
+            if line.startswith('##'):
                 rec.cds_exons = cds_exons
                 rec.cds_seq_start = cds_seq_start
                 rec.cds_seq_end = cds_seq_end
@@ -426,7 +444,7 @@ class gmapGFFReader:
             type = raw[2]            
             if type == 'exon':
                 rstart1, rend1 = int(raw[3]), int(raw[4])
-                score = float(raw[5])
+                score = float(raw[5]) if raw[5]!='.' else 0
                 rstrand = raw[6] # this is the strand on the reference genome
                 for blob in raw[8].split(';'):
                     if blob.startswith('Target='):
@@ -441,7 +459,7 @@ class gmapGFFReader:
                     print >> sys.stderr, "{0} has non-colinear exons!".format(rec.seqid)
                     while True:
                         line = self.f.readline().strip()
-                        if line.startswith('###'): return rec
+                        if line.startswith('##'): return rec
                 rec.strand = rstrand
             elif type == 'CDS':
                 rstart1, rend1 = int(raw[3]), int(raw[4])
@@ -499,6 +517,9 @@ def write_collapseGFF_format(f, r):
     f.write("{chr}\tPacBio\ttranscript\t{s}\t{e}\t.\t{strand}\t.\tgene_id \"{gid}\"; transcript_id \"{tid}\";\n".format(chr=r.chr, s=r.start+1, e=r.end, strand=r.strand,gid=r.seqid[:r.seqid.rfind('.')], tid=r.seqid))
     for exon in r.ref_exons:
         f.write("{chr}\tPacBio\texon\t{s}\t{e}\t.\t{strand}\t.\tgene_id \"{gid}\"; transcript_id \"{tid}\";\n".format(chr=r.chr, s=exon.start+1, e=exon.end, strand=r.strand, gid=r.seqid[:r.seqid.rfind('.')], tid=r.seqid))
+    if r.cds_exons is not None:
+        for exon in r.cds_exons:
+            f.write("{chr}\tPacBio\tCDS\t{s}\t{e}\t.\t{strand}\t.\tgene_id \"{gid}\"; transcript_id \"{tid}\";\n".format(chr=r.chr, s=exon.start+1, e=exon.end, strand=r.strand, gid=r.seqid[:r.seqid.rfind('.')], tid=r.seqid))
     
 
 class collapseGFFReader(gmapGFFReader):
@@ -546,11 +567,37 @@ class collapseGFFReader(gmapGFFReader):
             if raw[2] == 'exon':
                 s, e = int(raw[3])-1, int(raw[4])
                 rec.add_exon(s, e, s, e, rstrand='+', score=None)
+            elif raw[2] == 'CDS':
+                s, e = int(raw[3])-1, int(raw[4])
+                rec.add_cds_exon(s, e)
             else: # another new record, wind back and return
                 self.f.seek(cur)
                 return rec
         raise Exception, "Should not reach here!"
-                
+
+
+fusion_seqid_rex = re.compile('(\S+\\.\d+)\\.(\d+)')
+class collapseGFFFusionReader(collapseGFFReader):
+    def read(self):
+        r0 = super(collapseGFFFusionReader, self).read()
+        m = fusion_seqid_rex.match(r0.seqid)
+        fusion_id = m.group(1)
+        records = [r0]
+        while True:
+            cur = self.f.tell()
+            try:
+                r = super(collapseGFFFusionReader, self).read()
+            except StopIteration:
+                return fusion_id, records
+            m = fusion_seqid_rex.match(r.seqid)
+            if m.group(1) != fusion_id:
+                self.f.seek(cur)
+                return fusion_id, records
+            else:
+                records.append(r)
+
+
+
 
 class ucscGFFReader(gmapGFFReader):
     def read(self):
@@ -1042,12 +1089,160 @@ def make_sim_and_ref_seqlength_report(ref_fasta_filename, sim_fasta_filename):
             f.write("SIM\t{0}\t{1}\n".format(len(r.seq),r.id))
             
         
-    
-    
+
+"""
+##gff-version 3
+# generated on Tue Dec 10 12:13:05 2013 by ./dump_all_gramene_dbs_continuing.pl
+# for species maize
+# genebuild 2010-01-MaizeSequence
+5       ensembl gene    1579    3920    .       -       .       ID=GRMZM2G356204;Name=GRMZM2G356204;biotype=protein_coding
+5       ensembl mRNA    1579    3920    .       -       .       ID=GRMZM2G356204_T01;Parent=GRMZM2G356204;Name=GRMZM2G356204_T01;biotype=protein_coding
+5       ensembl exon    1579    3920    .       -       .       Parent=GRMZM2G356204_T01;Name=exon.12
+5       ensembl CDS     1681    3903    .       -       .       Parent=GRMZM2G356204_T01;Name=CDS.13
+5       ensembl gene    10731   23527   .       -       .       ID=GRMZM2G054378;Name=GRMZM2G054378;biotype=protein_coding
+5       ensembl mRNA    22087   23527   .       -       .       ID=GRMZM2G054378_T09;Parent=GRMZM2G054378;Name=GRMZM2G054378_T09;biotype=protein_coding
+5       ensembl intron  22956   23034   .       -       .       Parent=GRMZM2G054378_T09;Name=intron.19
+5       ensembl intron  22799   22898   .       -       .       Parent=GRMZM2G054378_T09;Name=intron.20
+5       ensembl intron  22634   22722   .       -       .       Parent=GRMZM2G054378_T09;Name=intron.21
+5       ensembl intron  22456   22553   .       -       .       Parent=GRMZM2G054378_T09;Name=intron.22
+5       ensembl exon    23035   23527   .       -       .       Parent=GRMZM2G054378_T09;Name=exon.23
+5       ensembl exon    22899   22955   .       -       .       Parent=GRMZM2G054378_T09;Name=exon.24
+5       ensembl exon    22723   22798   .       -       .       Parent=GRMZM2G054378_T09;Name=exon.25
+5       ensembl exon    22554   22633   .       -       .       Parent=GRMZM2G054378_T09;Name=exon.26
+5       ensembl exon    22087   22455   .       -       .       Parent=GRMZM2G054378_T09;Name=exon.27
+5       ensembl CDS     23035   23193   .       -       .       Parent=GRMZM2G054378_T09;Name=CDS.28
+5       ensembl CDS     22929   22955   .       -       0       Parent=GRMZM2G054378_T09;Name=CDS.29
+"""
+class MaizeGFFReader(collapseGFFReader):
+    def read(self):
+        """
+        PacBio-style GFF from the collapsed output, which is
+        0) chrmosome
+        1) source (PacBio)
+        2) feature (transcript|exon)
+        3) start (1-based)
+        4) end (1-based)
+        5) score (always .)
+        6) strand
+        7) frame (always .)
+        8) blurb
+
+        ex:
+        chr1    PacBio  transcript      897326  901092  .       +       .       gene_id "PB.1"; transcript_id "PB.1.1";
+        chr1    PacBio  exon    897326  897427  .       +       .       gene_id "PB.1"; transcript_id "PB.1.1";
+        """
+        cur = self.f.tell()
+        line = self.f.readline().strip()
+        if self.f.tell() == cur:
+            raise StopIteration, "EOF reached!!"
+
+        raw = line.strip().split('\t')
+        if raw[2] == 'gene': # ignore this and read the next line 'mRNA'
+            line = self.f.readline().strip()
+            raw = line.strip().split('\t')
+        assert raw[2] == 'mRNA'
+        chr = raw[0]
+        strand = raw[6]
+        seqid = None
+        for stuff in raw[8].split(';'): # ex: ID=GRMZM2G054378;Name=GRMZM2G054378;biotype=protein_coding
+            a, b = stuff.strip().split('=')
+            if a == 'ID':
+                seqid = b
+                break
+
+        rec = gmapRecord(chr, coverage=None, identity=None, strand=strand, seqid=seqid)
+
+        while True:
+            cur = self.f.tell()
+            line = self.f.readline().strip()
+            if self.f.tell() == cur:
+                return rec
+            raw = line.split('\t')
+            if raw[2] == 'exon':
+                s, e = int(raw[3])-1, int(raw[4])
+                rec.add_exon(s, e, s, e, rstrand=strand, score=None)
+            elif raw[2] == 'CDS':
+                s, e = int(raw[3])-1, int(raw[4])
+                rec.add_cds_exon(s, e)
+            elif raw[2] == 'intron':
+                pass # ignore intron annotations
+            else: # another new record, wind back and return
+                self.f.seek(cur)
+                return rec
+        raise Exception, "Should not reach here!"
                 
     
-        
-    
+
+
+"""
+Because f***ing exonerate cannot generate GFF3 formats.
+
+X       exonerate:est2genome    gene    78421768        78454596        5775    -       .       gene_id 0 ; sequence lcl|NM_001001171.1_cds_NP_001001171.1_1 ; gene_orient
+ation + ; identity 99.92 ; similarity 99.92
+X       exonerate:est2genome    utr5    78454482        78454596        .       -       .
+X       exonerate:est2genome    exon    78454482        78454596        .       -       .       insertions 0 ; deletions 0 ; identity 100.00 ; similarity 100.00
+X       exonerate:est2genome    splice5 78454480        78454481        .       -       .       intron_id 1 ; splice_site "GT"
+X       exonerate:est2genome    intron  78451617        78454481        .       -       .       intron_id 1
+X       exonerate:est2genome    splice3 78451617        78451618        .       -       .       intron_id 0 ; splice_site "AG"
+
+"""
+class ExonerateGFF2Reader(collapseGFFReader):
+    def read(self):
+        """
+        PacBio-style GFF from the collapsed output, which is
+        0) chrmosome
+        1) source (PacBio)
+        2) feature (transcript|exon)
+        3) start (1-based)
+        4) end (1-based)
+        5) score (always .)
+        6) strand
+        7) frame (always .)
+        8) blurb
+
+        ex:
+        chr1    PacBio  transcript      897326  901092  .       +       .       gene_id "PB.1"; transcript_id "PB.1.1";
+        chr1    PacBio  exon    897326  897427  .       +       .       gene_id "PB.1"; transcript_id "PB.1.1";
+        """
+        cur = self.f.tell()
+        line = self.f.readline().strip()
+        if self.f.tell() == cur:
+            raise StopIteration, "EOF reached!!"
+
+        raw = line.strip().split('\t')
+        if raw[2] == 'gene': # read the gene line to get the ID and strand
+            for stuff in raw[8].split(' ; '):
+                a, b = stuff.strip().split(' ')
+                if a == 'sequence':
+                    seqid = b
+
+
+        chr = raw[0]
+        strand = raw[6]
+        assert strand in ('+', '-')
+
+        rec = gmapRecord(chr, coverage=None, identity=None, strand=strand, seqid=seqid)
+
+        while True:
+            cur = self.f.tell()
+            line = self.f.readline().strip()
+            if self.f.tell() == cur:
+                return rec
+            raw = line.split('\t')
+            if raw[2] == 'exon':
+                s, e = int(raw[3])-1, int(raw[4])
+                rec.add_exon(s, e, s, e, rstrand=strand, score=None)
+            elif raw[2] == 'CDS':
+                pass # ignore CDS annotations
+            elif raw[2] == 'intron':
+                pass # ignore intron annotations
+            elif raw[2] == 'similarity':
+                # end of the record! return
+                return rec
+            elif raw[2] in ('splice3', 'splice5', 'utr3', 'utr5'):
+                pass # ignore
+
+        raise Exception, "Should not reach here!"
             
         
         
