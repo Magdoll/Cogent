@@ -324,15 +324,21 @@ if __name__ == "__main__":
 
     if args.dun_trim_sequence:
         log.info("Trim input lower bases=FALSE.")
+        owd = os.getcwd()
+        os.chdir(args.dirname)
         f = open('in.trimmed.fa', 'w')
         for r in SeqIO.parse(open('in.fa'),'fasta'):
             f.write(">{0}\n{1}\n".format(r.id, str(r.seq).upper()))
         f.close()
+        os.chdir(owd)
     else:
         log.info("Trim input lower bases=TRUE.")
+        owd = os.getcwd()
+        os.chdir(args.dirname)
         f = open('in.trimmed.fa', 'w')
         for r in SeqIO.parse(open('in.fa'),'fasta'): f.write(">{0}\n{1}\n".format(r.id, trim_ends(str(r.seq))))
         f.close()
+        os.chdir(owd)
     main_success = False
     max_kmer_to_try = max(200, cc_settings.KMER_SIZE)
     while cc_settings.KMER_SIZE <= max_kmer_to_try:
