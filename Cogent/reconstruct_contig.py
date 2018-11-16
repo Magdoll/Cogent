@@ -267,7 +267,7 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument("dirname")
-    parser.add_argument("-e", "--expected_error_rate", type=int, default=1, help="Expected error rate (default: 1%)")
+    parser.add_argument("-e", "--expected_error_rate", type=int, default=1, help="Expected error rate (default: 1%%)")
     parser.add_argument("--nx_cycle_detection", default=False, action="store_true", help="Cycle detection using networkx (default: off), will increase run-time. Recommend for debugging failed cases only.")
     parser.add_argument("-k", "--kmer_size", type=int, default=30, help="kmer size (default: 30)")
     parser.add_argument("-p", "--output_prefix", help="Output path prefix (ex: sample1)")

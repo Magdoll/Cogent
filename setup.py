@@ -10,6 +10,7 @@ setup(name='Cogent',
       author='Elizabeth Tseng',
       author_email='etseng@pacb.com',
       install_requires=[
+          'matplotlib >= 2.0.0, < 3.0.0',
           'numpy',
           'networkx==1.10',
           'scikit-image>=0.11.3',
