@@ -88,9 +88,9 @@ def get_consensus_through_pbdagcon(seq1, weight1, seq2, weight2):
     gcon_filename = fname + '.g_con.fasta'
     gref_filename = fname + '.g_con_ref.fasta'
     if os.path.exists(gcon_filename) and os.stat(gcon_filename).st_size > 0:
-        return SeqIO.parse(open(gcon_filename), 'fasta').next().seq.tostring()
+        return str(SeqIO.parse(open(gcon_filename), 'fasta').next().seq)
     elif os.path.exists(gref_filename):
-        return SeqIO.parse(open(gref_filename), 'fasta').next().seq.tostring()
+        return str(SeqIO.parse(open(gref_filename), 'fasta').next().seq)
     else:
         raise Exception, "Could not get results from running cmd:", cmd
 

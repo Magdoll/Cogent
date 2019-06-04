@@ -30,7 +30,7 @@ def precycle_kmer_adjustment(kmer_size):
     kmer_usage = defaultdict(lambda: defaultdict(lambda: [])) # kmer -> (seqid, i)
     for r in SeqIO.parse(open('in.trimmed.fa'),'fasta'):
         for i in xrange(len(r.seq)-kmer_size):
-            kmer_usage[r.seq.tostring()[i:i+kmer_size]][r.id].append(i)
+            kmer_usage[str(r.seq)[i:i+kmer_size]][r.id].append(i)
 
     max_kmer_needed = []
     for kmer,v in kmer_usage.iteritems():
