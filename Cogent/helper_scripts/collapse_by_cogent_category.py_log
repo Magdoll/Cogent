@@ -1,0 +1,170 @@
+
+from csv import DictReader
+import os, sys, subprocess
+from Bio import SeqIO
+
+"""
+Collapse choices:
+"""
+GMAP_CMD = "~/bin/gmap -D {d} -d {g} -f samse -n 0 -t 1 -z sense_force {i} > {i}.sam 2> {i}.sam.log"
+SORT_CMD = "sort -k 3,3 -k 4,4n {i}.sam > {i}.sorted.sam"
+COLLAPSE_CMD = "collapse_isoforms_by_sam.py --input {i} -s {i}.sorted.sam -c 0.90 -i 0.80 --dun-merge-5-shorter -o {i}.no5merge"
+FILTER_CMD = "filter_away_subset_in_no5merge.py {i}.no5merge.collapsed {i}.no5merge.collapsed.filtered"
+
+
+from test import collapse_using_Cogent
+
+failed = []
+result = {}
+file = 'RubyHummingbird_AugDNAnexus_IsoSeq.Cogent.result.out1.categorized.txt'
+reader = DictReader(open(file), delimiter='\t')
+for r in reader:
+ #   if int(r['num_Cogent_contigs'])==1: db, genome = r['gene_family'], 'cogent2'
+ #   elif int(r['num_pacbio_contig'])==1: db, genome = '~/share/gmap_db_new', 'Calypte_FalconFull'
+ #   elif int(r['num_illn_contig'])==1: db, genome = '~/share/gmap_db_new', 'calypte_illumina'
+ #   else: # none of them are one contig! will just use Cogent to do the best
+ #       db, genome = r['gene_family'], 'cogent2'
+    db, genome = r['gene_family'], 'cogent2'
+
+    success_flag, out_file, out_count = collapse_using_Cogent(r, db, genome, 'in.fa')
+    if success_flag:
+        result[r['gene_family']] = (out_file, out_count)
+    else:
+        success_flag, out_file, out_count = collapse_using_Cogent(r, db, genome, 'in.trimmed.fa')
+        if success_flag:
+            result[r['gene_family']] = (out_file, out_count)
+        else:
+            failed.append(r['gene_family'])
+
+
+def collapse_using_Cogent(r, db, genome, in_fa_filename='in.fa'):
+    in_fa = os.path.join(r['gene_family'], in_fa_filename)
+
+    if os.path.exists(in_fa + '.no5merge.collapsed.filtered.rep.rescued.fa'):
+        print >> sys.stderr, "{0} already done. skipping".format(r['gene_family'])
+        return True, in_fa + '.no5merge.collapsed.filtered.rep.rescued.fa', in_fa+'.no5merge.collapsed.filtered.abundance.txt'
+
+    if not os.path.exists(in_fa+'.sam'):   
+        cmd = GMAP_CMD.format(g=genome, i=in_fa, d=db)
+        if subprocess.check_call(cmd, shell=True)!=0:
+            print >> sys.stderr, "error CMD:", cmd
+            return False, None, None
+    
+    cmd = SORT_CMD.format(i=in_fa)
+    subprocess.check_call(cmd, shell=True)
+
+    cmd = COLLAPSE_CMD.format(i=in_fa)
+    try:
+        subprocess.check_call(cmd, shell=True)
+    except:
+        print >> sys.stderr, "error CMD:", cmd
+        return False, None, None
+
+    prefix = "Cogent" + r['gene_family'].split('/')[1]
+    # make the abundance file by hand
+    f = open(in_fa+'.no5merge.collapsed.abundance.txt', 'w')
+    for i in xrange(14): f.write('#\n')
+    f.write("pbid\tcount_fl\n")
+    for line in open(in_fa+'.no5merge.collapsed.group.txt'):
+        pbid, b = line.strip().split('\t')
+        f.write("{0}\t{1}\n".format(pbid, sum(int(x.split('/')[1].split('p')[0][1:]) for x in b.split(','))))
+        pbid_max_i = int(pbid.split('.')[1])
+    f.close()
+
+    cmd = FILTER_CMD.format(i=in_fa)
+    try:
+        subprocess.check_call(cmd, shell=True)
+    except:
+        return False, None, None
+
+    # some sequences may be not included due to low mapping coverage/identity 
+    # (esp. in cases using the PacBio/Illn genomes)
+    # need to "rescue" them and put it back in the result
+    ignored = set([line.strip().split('\t')[0] for line in open("{i}.no5merge.ignored_ids.txt".format(i=in_fa))])
+    
+    f = open("{i}.no5merge.collapsed.filtered.rep.rescued.fa".format(i=in_fa), 'w')
+    for r in SeqIO.parse(open("{i}.no5merge.collapsed.filtered.rep.fa".format(i=in_fa)), 'fasta'):
+        f.write(">{0}_{1}\n{2}\n".format(prefix, r.id, r.seq))
+    j = 1
+    rescued_abundance = {}
+    for r in SeqIO.parse(open(in_fa), 'fasta'):
+        if r.id in ignored:
+            f.write(">{0}_PB.{1}.{2}|{3}\n{4}\n".format(prefix, pbid_max_i+1, j, r.id, r.seq))
+            rescued_abundance["PB.{0}.{1}".format(pbid_max_i+1, j)] = int(r.id.split('/')[1].split('p')[0][1:])
+            j += 1
+    f.close()
+    
+    # change the filtered.abundance to have the prefix
+    os.system("sed -i 's/PB/{0}_PB/g' {1}.no5merge.collapsed.filtered.abundance.txt".format(prefix, in_fa))        
+    with open(in_fa+'.no5merge.collapsed.filtered.abundance.txt', 'a') as f:
+        for k,v in rescued_abundance.iteritems():
+            f.write("{0}_{1}\t{2}\n".format(prefix, k, v))
+
+    return True, "{i}.no5merge.collapsed.filtered.rep.rescued.fa".format(i=in_fa), in_fa+'.no5merge.collapsed.filtered.abundance.txt'
+get_ipython().magic(u'pdb ')
+get_ipython().magic(u'ls *log')
+get_ipython().magic(u'edit collapse_by_cogent_category.py_log')
+get_ipython().magic(u'edit collapse_by_cogent_category.py_log')
+get_ipython().magic(u'edit collapse_by_cogent_category.py_log')
+get_ipython().magic(u'edit collapse_by_cogent_category.py_log')
+get_ipython().magic(u'edit collapse_by_cogent_category.py_log')
+get_ipython().magic(u'edit collapse_by_cogent_category.py_log')
+get_ipython().magic(u'ls ')
+failed
+get_ipython().magic(u'pwd ')
+get_ipython().magic(u'pwd ')
+get_ipython().magic(u'pwd ')
+get_ipython().magic(u'ls *log')
+get_ipython().magic(u'edit collapse_by_cogent_category.py_log')
+get_ipython().magic(u'edit collapse_by_cogent_category.py_log')
+failed
+result['rubyallcluster_k30/5701']
+get_ipython().magic(u'more rubyallcluster_k30/5701/in.trimmed.fa.no5merge.collapsed.filtered.rep.rescued.fa')
+get_ipython().magic(u'more rubyallcluster_k30/5701/in.trimmed.fa.no5merge.collapsed.filtered.abundance.txt')
+get_ipython().magic(u'ls ')
+get_ipython().magic(u'ls *partition.txt')
+get_ipython().magic(u'more rubyallcluster_k30.partition.txt')
+result.items()[:2]
+get_ipython().magic(u'logstart collapse_by_cogent_category.py_log append')
+# make the orphans
+get_ipython().magic(u'ls *txt')
+f = open('rubyallcluster_k30.partition.txt')
+for line in f: pass
+line[:20]
+orphans = line.split(':')[1].split(',')
+len(orphans)
+get_ipython().magic(u'ls *fa')
+get_ipython().magic(u'ls *fasta')
+get_ipython().magic(u'more rubyallcluster.hq_isoforms.fasta')
+get_ipython().magic(u'more rubyallcluster_k30/5701/in.trimmed.fa.no5merge.collapsed.filtered.abundance.txt')
+from Bio import SeqIO
+f = open('final.collapsed_using_cogent.fa', 'w')
+f1 = open('final.collapsed_using_cogent.abundance.txt', 'w')
+f1.write("pbid\tcount_fl\n")
+len(orphans)
+# write orphans first
+get_ipython().magic(u'ls *fasta')
+get_ipython().magic(u'more rubyallcluster.hq_isoforms.fasta')
+orphans[0]
+i = 1
+for r in SeqIO.parse(open('rubyallcluster.hq_isoforms.fasta'),'fasta'):
+    if r.id in orphans:
+        newid = "Orphan{0}|{1}".format(i, r.id)
+        r.id = newid
+        f.write(">{0}\n{1}\n".format(r.id, r.seq))
+        f1.write("Orphan{0}\t{1}\n".format(i, int(r.id.split('/')[1].split('p')[0][1:])))
+        i += 1
+        
+result.items()[:2]
+for (_fa,_txt) in result.itervalues():
+    for r in SeqIO.parse(open(_fa), 'fasta'): f.write(">{0}\n{1}\n".format(r.id, r.seq))
+    h = open(_txt)
+    for j in xrange(15): h.readline() # read over comments and header
+    for line in h: f1.write(line)
+    
+f.close()
+f1.close()
+f.name
+get_ipython().magic(u'pwd ')
+len(orphans)
+len(result)
