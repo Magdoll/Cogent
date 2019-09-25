@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-version = '4.0'
+version = '4.0.0'
 
 setup(name='Cogent',
       version=version,
@@ -17,7 +17,7 @@ setup(name='Cogent',
           'scikit-image>=0.11.3 , <0.15',
           'pulp',
           'biopython',
-          'bx-python==0.7.3'     ],
+          'bx-python>=0.7.3'     ],
       packages=['Cogent', 'Cogent.test'],
       package_dir = {'Cogent':'Cogent'},
       zip_safe=False,

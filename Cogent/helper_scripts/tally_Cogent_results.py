@@ -1,4 +1,5 @@
 import os, re, sys
+from cupcake.io import GFF
 from Bio import SeqIO
 from collections import defaultdict
 from bx.intervals.cluster import ClusterTree
@@ -160,7 +161,7 @@ def calculate_cov_acc(d):
             worst_cov, worst_acc = cov, acc
     return worst_cov, worst_acc, has_chimeric
 
-def tally_for_a_Cogent_dir(dirname, f1, f2, genome1, genome2, blastn_filename=None):
+def tally_for_a_Cogent_dir(dirname, writer1, writer2, genome1, genome2=None, blastn_filename=None):
     """
     1. read input mapped to cogent2 (in.trimmed.fa.cogent2.gff)
     2. read cogent2 mapped to genome1
@@ -182,7 +183,8 @@ def tally_for_a_Cogent_dir(dirname, f1, f2, genome1, genome2, blastn_filename=No
         assert r.id in seq_info
 
     d_genome1, contig_genome1 = read_cogent2_aligned_to_genome_sam(os.path.join(dirname, 'cogent2.fa'), os.path.join(dirname,'cogent2.fa.'+genome1+'.sam'))
-    d_genome2, contig_genome2 = read_cogent2_aligned_to_genome_sam(os.path.join(dirname, 'cogent2.fa'), os.path.join(dirname,'cogent2.fa.'+genome2+'.sam'))
+    if genome2 is not None:
+        d_genome2, contig_genome2 = read_cogent2_aligned_to_genome_sam(os.path.join(dirname, 'cogent2.fa'), os.path.join(dirname,'cogent2.fa.'+genome2+'.sam'))
 
     if blastn_filename is not None:
         qlen_dict = dict((r.id, len(r.seq)) for r in SeqIO.parse(open(os.path.join(dirname, 'in.trimmed.fa')),'fasta'))
@@ -190,20 +192,36 @@ def tally_for_a_Cogent_dir(dirname, f1, f2, genome1, genome2, blastn_filename=No
 
     # write:
     # dirname, # of input, # of cogent contig, # of pacbio_contig, total pacbio cov, pacbio iden
-    f1.write("{0}\t{1}\t{2}\t".format(dirname, len(seq_info), len(contigs_seen)))
     cov1, acc1, has_chimeric1 = calculate_cov_acc(d_genome1)
-    f1.write("{0}\t{1:.2f}\t{2:.2f}\t{3}\t{4}\t".format(len(contig_genome1), cov1, acc1, has_chimeric1, ",".join(contig_genome1)))
+    rec1 = {'gene_family': dirname,
+            'input_size': len(seq_info),
+            'num_Cogent_contigs': len(contigs_seen),
+            'num_genome_contig': len(contig_genome1),
+            'genome_cov': cov1,
+            'genome_acc': acc1,
+            'genome_chimeric': has_chimeric1,
+            'genome_contigs': ",".join(contig_genome1)}
+
+
     # (for genome2), # of contig, total worst cov, iden, is_chimeric, comma-separated list of contigs
-    cov2, acc2, has_chimeric2 = calculate_cov_acc(d_genome2)
-    f1.write("{0}\t{1:.2f}\t{2:.2f}\t{3}\t{4}".format(len(contig_genome2), cov2, acc2, has_chimeric2, ",".join(contig_genome2)))
+    if genome2 is not None:
+        cov2, acc2, has_chimeric2 = calculate_cov_acc(d_genome2)
+        rec1['num_genome2_contig'] = len(contig_genome2)
+        rec1['genome2_cov'] = cov2
+        rec1['genome2_acc'] = acc2
+        rec1['genome2_chimeric'] = has_chimeric2
+        rec1['genome2_contigs'] = ",".join(contig_genome2)
     # (for blastn, optional) best name with best e-value
     if blastn_filename is not None:
-        if len(best_of) == 0: f1.write("\t0\tNA\n")
+        if len(best_of) == 0:
+            rec1['num_blastn'] = 0
+            rec1['blastn_best'] = 'NA'
         else:
             stuff = best_of.values() # list of (e-value, name)
             stuff.sort()
-            f1.write("\t{0}\t\"{1}\"\n".format(sum(_n!='NA' for _e,_n in best_of.values()), stuff[0][1]))
-    else: f1.write("\n")
+            rec1['num_blastn'] = sum(_n!='NA' for _e,_n in best_of.values())
+            rec1['blastn_best'] = stuff[0][1]
+    writer1.writerow(rec1)
 
     in_aligned_to_genome1 = os.path.join(dirname, 'in.trimmed.fa.'+genome1+'.sam')
     if os.path.exists(in_aligned_to_genome1):
@@ -214,12 +232,19 @@ def tally_for_a_Cogent_dir(dirname, f1, f2, genome1, genome2, blastn_filename=No
     for seqid, v in seq_info.iteritems():
         contigs = [x.sID for x in v]
         acc = sum(x.identity*x.qCoverage for x in v)/sum(x.qCoverage for x in v)
-        f2.write("{0}\t{1}\t{2}\t{3}\t".format(seqid, dirname, ",".join(contigs), acc))
+
+        rec2 = {'seqid': seqid,
+                'gene_family': dirname,
+                'Cogent_contig': ",".join(contigs),
+                'Cogent_contig_acc': acc}
 
         if not seqid in d3:
-            f2.write("NA\t0\tNA\tNA")
-            if blastn_filename is not None: f2.write("\tNA\n")
-            else: f2.write("\n")
+            rec2['scaffold'] = 'NA'
+            rec2['num_scaffold'] = 0
+            rec2['scaffold_coverage'] = 'NA'
+            rec2['scaffold_acc'] = 'NA'
+            if blastn_filename is not None:
+                rec2['blastn_best'] = 'NA'
         else:
             scaffolds = [x.sID for x in d3[seqid]]
             # calculate cov and acc
@@ -229,6 +254,11 @@ def tally_for_a_Cogent_dir(dirname, f1, f2, genome1, genome2, blastn_filename=No
                 c.insert(x.qStart, x.qEnd, -1)
             cov = sum(_e-_s for _s,_e,_junk in c.getregions())*100./qlen
             acc = sum(x.identity*x.qCoverage for x in d3[seqid])*1./sum(x.qCoverage for x in d3[seqid])
-            f2.write("{0}\t{1}\t{2}\t{3}".format(",".join(scaffolds), len(scaffolds), cov, acc))
-            if blastn_filename is not None: f2.write("\t{0}\n".format(best_of[seqid][1]))
-            else: f2.write("\n")
+            rec2['scaffold'] = ",".join(scaffolds)
+            rec2['num_scaffold'] = len(scaffolds)
+            rec2['scaffold_coverage'] = cov
+            rec2['scaffold_acc'] = acc
+            if blastn_filename is not None:
+                rec2['blastn_best'] = best_of[seqid][1]
+        writer2.writerow(rec2)
+
