@@ -151,8 +151,8 @@ def find_minimal_path_needed_to_explain_pathd(G, path_d, keys, max_G_size=50):
     used_path = set()
 
     if G.number_of_nodes() <= max_G_size:
-        sources = filter(lambda n: G.in_degree(n) == 0, G.nodes_iter())
-        sinks = filter(lambda n: G.out_degree(n) == 0, G.nodes_iter())
+        sources = filter(lambda n: G.in_degree(n) == 0, G.nodes())
+        sinks = filter(lambda n: G.out_degree(n) == 0, G.nodes())
         paths = []
         for src in sources:
             for sink in sinks:

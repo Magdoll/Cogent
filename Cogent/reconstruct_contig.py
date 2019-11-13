@@ -162,7 +162,7 @@ def run_Cogent_on_input():
 
 
     # resolve all homopolymers
-    homo_nodes = filter(lambda n: G.has_edge(n, n), G.nodes_iter())
+    homo_nodes = filter(lambda n: G.has_edge(n, n), G.nodes())
     for n in homo_nodes:
         sp.untangle_homopolymer_helper(G, path_d, mermap, seqweights, n)
 
@@ -194,7 +194,7 @@ def run_Cogent_on_input():
 
     ## sanity check: confirm that all sequences can be reconstructed via the collapsed graph
     ## also check that all nodes are visited
-    #for n in G.nodes_iter(): assert n in visited
+    #for n in G.nodes(): assert n in visited
     #for k,v in path_d.iteritems():
     #    s = sp.stitch_string_from_path(v, mermap)
     #    s2 = seqdict[k].seq.tostring().upper()

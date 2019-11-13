@@ -154,7 +154,7 @@ def calculate_cov_acc(d):
             qlen = x.qLen
             c.insert(x.qStart, x.qEnd, -1)
         cov = sum(_e-_s for _s,_e,_junk in c.getregions())*100./qlen
-        acc = sum(x.identity*x.qCoverage for x in v)*1./sum(x.qCoverage for x in v)
+        acc = sum(x.identity*x.qCoverage for x in v)*100./sum(x.qCoverage for x in v)
         if len(v) > 1 and is_true_minimap2_chimeric(v): # is truly chimeric
             has_chimeric = True
         if cov < worst_cov:
@@ -197,8 +197,8 @@ def tally_for_a_Cogent_dir(dirname, writer1, writer2, genome1, genome2=None, bla
             'input_size': len(seq_info),
             'num_Cogent_contigs': len(contigs_seen),
             'num_genome_contig': len(contig_genome1),
-            'genome_cov': cov1,
-            'genome_acc': acc1,
+			'genome_cov': "{0:.2f}".format(cov1),
+			'genome_acc': "{0:.2f}".format(acc1),
             'genome_chimeric': has_chimeric1,
             'genome_contigs': ",".join(contig_genome1)}
 
@@ -207,8 +207,8 @@ def tally_for_a_Cogent_dir(dirname, writer1, writer2, genome1, genome2=None, bla
     if genome2 is not None:
         cov2, acc2, has_chimeric2 = calculate_cov_acc(d_genome2)
         rec1['num_genome2_contig'] = len(contig_genome2)
-        rec1['genome2_cov'] = cov2
-        rec1['genome2_acc'] = acc2
+        rec1['genome2_cov'] = "{0:.2f}".format(cov2)
+        rec1['genome2_acc'] = "{0:.2f}".format(acc2)
         rec1['genome2_chimeric'] = has_chimeric2
         rec1['genome2_contigs'] = ",".join(contig_genome2)
     # (for blastn, optional) best name with best e-value
@@ -220,7 +220,7 @@ def tally_for_a_Cogent_dir(dirname, writer1, writer2, genome1, genome2=None, bla
             stuff = best_of.values() # list of (e-value, name)
             stuff.sort()
             rec1['num_blastn'] = sum(_n!='NA' for _e,_n in best_of.values())
-            rec1['blastn_best'] = stuff[0][1]
+            rec1['blastn_best'] = '"' + stuff[0][1] + '"'
     writer1.writerow(rec1)
 
     in_aligned_to_genome1 = os.path.join(dirname, 'in.trimmed.fa.'+genome1+'.sam')

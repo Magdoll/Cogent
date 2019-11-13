@@ -105,7 +105,7 @@ def detect_and_replace_cycle(G, path_d, weight_d, mermap, max_node_index, kmer_s
         if d['weight']==0:
             G.remove_edge(s, t)
     bad = []
-    for n in G.nodes_iter():
+    for n in G.nodes():
         if G.degree(n) == 0: bad.append(n)
     G.remove_nodes_from(bad)
 

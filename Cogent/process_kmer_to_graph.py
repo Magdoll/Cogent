@@ -14,7 +14,7 @@ MashDist = namedtuple('MashDist', 'id1 id2 pval sim')
 
 def run_ncut(G, labels2_map, ncut_map, nodelist, ncut_threshold):
     start_t = time.time()
-    labels = np.array([i for i in G.nodes_iter()])
+    labels = np.array([i for i in G.nodes()])
     labels2 = graph.cut_normalized(labels, G, thresh=ncut_threshold)
     for i1, i2 in itertools.izip(labels, labels2):
         labels2_map[i2].append(nodelist[i1])
@@ -102,8 +102,8 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False, weight
             if i in G:
                 G.node[i]['gene'] = str(pbid) # this is the ground truth
                 G.node[i]['label'] = str(ncut_map[i]) # this is the ncut label
-        labels = np.array([i for i in G.nodes_iter()])
-        labels2 = np.array([ncut_map[i] for i in G.nodes_iter()])
+        labels = np.array([i for i in G.nodes()])
+        labels2 = np.array([ncut_map[i] for i in G.nodes()])
         pos = nx.random_layout(G)
         #drawk.assign_pos_by_answer(G, pos, gene_answer)
         #drawk.draw_assignment(G, pos, labels, labels2, gene_answer, output_prefix)

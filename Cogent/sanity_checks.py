@@ -63,8 +63,8 @@ def sanity_check_is_chain(G, chain):
     """
     assert G.out_degree(chain[0]) == 1
     for i,n1 in enumerate(chain[1:-1]):
-        assert G.in_degree(n1) == 1 and G.out_degree(n1) == 1 and G.predecessors(n1)[0] == chain[i] \
-                and G.successors(n1)[0] == chain[i+2]
+        assert G.in_degree(n1) == 1 and G.out_degree(n1) == 1 and G.predecessors(n1).next() == chain[i] \
+                and G.successors(n1).next() == chain[i+2]
 
 
 def sanity_check_reconstruction(path_d, mermap, seqdict):
