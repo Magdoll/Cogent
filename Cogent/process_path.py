@@ -15,7 +15,7 @@ def make_in_same_path(path_d):
     return a dict of node id --> set of nodes in the same path
     """
     in_same_path = defaultdict(lambda: set())
-    for path in path_d.itervalues():
+    for path in path_d.values():
         for i,n1 in enumerate(path):
             for n2 in path[i+1:]:
                 in_same_path[n1].add(n2)
@@ -29,7 +29,7 @@ def stitch_string_from_path(path, mermap):
     path --- list of nodes ex: [0, 71, 100]
     """
     seq = mermap[path[0]]
-    for i in xrange(1, len(path)):
+    for i in range(1, len(path)):
         seq += mermap[path[i]][(cc_settings.KMER_SIZE-1):]
     return seq
 
@@ -151,8 +151,8 @@ def find_minimal_path_needed_to_explain_pathd(G, path_d, keys, max_G_size=50):
     used_path = set()
 
     if G.number_of_nodes() <= max_G_size:
-        sources = filter(lambda n: G.in_degree(n) == 0, G.nodes())
-        sinks = filter(lambda n: G.out_degree(n) == 0, G.nodes())
+        sources = [n for n in G.nodes() if G.in_degree(n) == 0]
+        sinks = [n for n in G.nodes() if G.out_degree(n) == 0]
         paths = []
         for src in sources:
             for sink in sinks:
@@ -162,7 +162,7 @@ def find_minimal_path_needed_to_explain_pathd(G, path_d, keys, max_G_size=50):
                 log.info("number of paths now: {0}".format(len(paths)))
     else:
         log.info("Number of nodes exceeds {0}. Not dealing with pathological case now. Just use the paths!".format(max_G_size))
-        paths = path_d.values()
+        paths = list(path_d.values())
 
     good_for = defaultdict(lambda: [])
     for j,k in enumerate(keys):
@@ -188,4 +188,4 @@ def find_minimal_path_needed_to_explain_pathd(G, path_d, keys, max_G_size=50):
     new_paths = {}
     for _new,_old in enumerate(used_path):
         new_paths[_new] = paths[_old]
-    return good_for.items(), new_paths
+    return list(good_for.items()), new_paths

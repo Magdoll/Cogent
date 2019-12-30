@@ -19,12 +19,12 @@ def draw_assignment(G, pos, labels, labels2, answer_d, output_prefix):
     plt.clf()
     groups = np.unique(labels2)
     m = len(groups)
-    for i in xrange(m):
+    for i in range(m):
         nx.draw_networkx_nodes(G, pos, nodelist=list(labels[labels2==groups[i]]), \
                 node_color=plt.cm.jet(i*1./m), node_size=300, alpha=.5)
 
     ans_labels = {}
-    for k,v in answer_d.iteritems():
+    for k,v in answer_d.items():
         for x in v: ans_labels[x] = k
     nx.draw_networkx_labels(G, pos, ans_labels, font_size=12)
 
@@ -33,15 +33,15 @@ def draw_assignment(G, pos, labels, labels2, answer_d, output_prefix):
     plt.show()
 
     # show only edges that are > 0.9
-    pp = filter(lambda (a,b,d): d['weight']>=.9, G.edges(data=True))
+    pp = [a_b_d for a_b_d in G.edges(data=True) if a_b_d[2]['weight']>=.9]
     nx.draw_networkx_edges(G, pos, edgelist=pp, width=1, alpha=.5)
     plt.savefig(output_prefix+'.with_edges.png')
     plt.show()
 
 def assign_pos_by_answer(G, pos, answer_d):
     m = math.sqrt(len(answer_d)) + 1
-    keys = answer_d.keys()
-    for i in xrange(len(keys)):
+    keys = list(answer_d.keys())
+    for i in range(len(keys)):
         _row, _col = i/m, i%m
         x_min = _row * 1. / m
         x_max = x_min + 1./m
@@ -68,10 +68,10 @@ def plot_proportion_related_vs_unrelated(seq_d, output_filename):
     f.write("id1\tid2\ttag\tsim\n")
 
     n = len(seq_d)
-    keys = seq_d.keys()
-    for i in xrange(n-1):
+    keys = list(seq_d.keys())
+    for i in range(n-1):
         x1 = seq_d[keys[i]]
-        for j in xrange(i+1, n):
+        for j in range(i+1, n):
             x2 = seq_d[keys[j]]
             sim = len(x1.intersection(x2))*1. / min(len(x1), len(x2))
             if keys[i].split('.')[1] == keys[j].split('.')[1]: # ex: PB.1.3 vs PB.1.4

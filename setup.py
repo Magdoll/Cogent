@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-version = '4.0.0'
+version = '6.0.0'
 
 setup(name='Cogent',
       version=version,
@@ -10,11 +10,11 @@ setup(name='Cogent',
       author='Elizabeth Tseng',
       author_email='etseng@pacb.com',
       install_requires=[
-          'matplotlib >= 2.0.0, < 3.0.0',
-          'numpy < 1.16',
-          'scipy < 1.3',
-          'networkx>=2.2',
-          'scikit-image>=0.11.3 , <0.15',
+          'matplotlib',
+          'numpy',
+          'scipy',
+          'networkx',
+          'scikit-image',
           'pulp',
           'biopython',
           'bx-python>=0.7.3'     ],

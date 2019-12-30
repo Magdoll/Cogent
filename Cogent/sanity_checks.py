@@ -8,7 +8,7 @@ def sanity_check_mash_exists():
     try:
         run_external_call("mash --version")
     except:
-        print >> sys.stderr, "mash executable does not exist. Please install mash first!"
+        print("mash executable does not exist. Please install mash first!", file=sys.stderr)
         sys.exit(-1)
 
 def sanity_check_gmapl_exists():
@@ -19,15 +19,15 @@ def sanity_check_gmapl_exists():
     try:
         run_external_call("gmapl --version")
     except:
-        print >> sys.stderr, "gmapl executable does not exist. You probably have an old version of GMAP." \
-                             "Please install a newer version of GMAP and try again."
+        print("gmapl executable does not exist. You probably have an old version of GMAP." \
+                             "Please install a newer version of GMAP and try again.", file=sys.stderr)
         sys.exit(-1)
 
 def sanity_check_minimap2_exists():
     try:
         run_external_call("minimap2 --version")
     except:
-        print >> sys.stderr, "minimap2 executable does not exist. Please install minimap2 first!"
+        print("minimap2 executable does not exist. Please install minimap2 first!", file=sys.stderr)
         sys.exit(-1)
 
 def sanity_check_fasta(fasta_filename):
@@ -40,15 +40,15 @@ def sanity_check_fasta(fasta_filename):
         seq = str(r.seq).upper()
         for s in seq:
             if s not in ('A','T','C','G'):
-                print r.id, s
+                print(r.id, s)
                 seq_passed = False
                 break
         if not seq_passed:
-            print >> sys.stderr, "sequence {0} contains non A/T/C/G characters! Not OK!".format(r.id)
+            print("sequence {0} contains non A/T/C/G characters! Not OK!".format(r.id), file=sys.stderr)
             passed = False
 
     if not passed:
-        print >> sys.stderr, "Please fix the offending sequences first. Abort."
+        print("Please fix the offending sequences first. Abort.", file=sys.stderr)
         sys.exit(-1)
 
 
@@ -63,27 +63,27 @@ def sanity_check_is_chain(G, chain):
     """
     assert G.out_degree(chain[0]) == 1
     for i,n1 in enumerate(chain[1:-1]):
-        assert G.in_degree(n1) == 1 and G.out_degree(n1) == 1 and G.predecessors(n1).next() == chain[i] \
-                and G.successors(n1).next() == chain[i+2]
+        assert G.in_degree(n1) == 1 and G.out_degree(n1) == 1 and next(G.predecessors(n1)) == chain[i] \
+                and next(G.successors(n1)) == chain[i+2]
 
 
 def sanity_check_reconstruction(path_d, mermap, seqdict):
-    for seqid, path in path_d.iteritems():
+    for seqid, path in path_d.items():
         seq = stitch_string_from_path(path, mermap)
         orig = seqdict[seqid].seq.tostring().upper()
 
         flag, cigar = splice_align.validate_reconstructed_seq(seq, orig)
         if not flag:
-            print "not validated:", seqid, cigar
-            raw_input()
+            print("not validated:", seqid, cigar)
+            input()
 
 
 def sanity_check_is_subset(path_d, mermap, seqdict):
-    for seqid, path in path_d.iteritems():
+    for seqid, path in path_d.items():
         seq = stitch_string_from_path(path, mermap)
         orig = seqdict[seqid].seq.tostring().upper()
         if seq!=orig:
-            print "not valid subset for:", seqid
+            print("not valid subset for:", seqid)
             return False
     return True
 
@@ -93,12 +93,12 @@ def sanity_check_path_all_valid(path_d, G):
     Make sure all the paths are still a valid path in G
     """
     check_passed = True
-    for seqid, path in path_d.iteritems():
+    for seqid, path in path_d.items():
         if path[0] not in G:
-            print "missing head node {0}".formt(path[0])
+            print("missing head node {0}".formt(path[0]))
             check_passed = False
-        for i in xrange(len(path)-1):
+        for i in range(len(path)-1):
             if not G.has_edge(path[i], path[i+1]):
-                print "missing path {0}->{1}".format(path[i], path[i+1])
+                print("missing path {0}->{1}".format(path[i], path[i+1]))
                 check_passed = False
     return check_passed

@@ -21,7 +21,7 @@ def split_input(fasta_filename, chunk_size):
     f = open(fasta_filename + '.' + str(split_i), 'w')
     files = [f.name]
     for r in SeqIO.parse(open(fasta_filename), 'fasta'):
-        print i
+        print(i)
         i += 1
         f.write(">{0}\n{1}\n".format(r.id, r.seq))
         if i >= chunk_size:
@@ -31,12 +31,12 @@ def split_input(fasta_filename, chunk_size):
             f = open(fasta_filename + '.' + str(split_i), 'w')
             files.append(f.name)
     f.close()
-    return filter(lambda x: os.stat(x).st_size > 0, files)
+    return [x for x in files if os.stat(x).st_size > 0]
 
 def run_sketch(fasta_filename, kmer_size, sketch_size):
     cmd = "mash sketch -i -k {k} -s {s} -o {i}.s{s}k{k} {i}".format(i=fasta_filename, k=kmer_size, s=sketch_size)
     if subprocess.check_call(cmd, shell=True)!=0:
-        print >> sys.stderr, "ERROR running:", cmd
+        print("ERROR running:", cmd, file=sys.stderr)
         sys.exit(-1)
     return "{i}.s{s}k{k}.msh".format(i=fasta_filename, k=kmer_size, s=sketch_size)
 
@@ -44,9 +44,9 @@ def run_sketch(fasta_filename, kmer_size, sketch_size):
 def run_dist(sketch1, sketch2, min_dist):
     cmd = "mash dist -d {0} {1} {2} > {1}.{2}.dist".format(min_dist, sketch1, sketch2)
     if subprocess.check_call(cmd, shell=True)!=0:
-        print >> sys.stderr, "ERROR running:", cmd
+        print("ERROR running:", cmd, file=sys.stderr)
         sys.exit(-1)
-    print >> sys.stderr, "{0}.{1}.dist completed".format(sketch1, sketch2)
+    print("{0}.{1}.dist completed".format(sketch1, sketch2), file=sys.stderr)
     return "{0}.{1}.dist".format(sketch1, sketch2)
 
 def main(fasta_filename, kmer_size, sketch_size, min_dist, chunk_size, cpus):
@@ -61,7 +61,7 @@ def main(fasta_filename, kmer_size, sketch_size, min_dist, chunk_size, cpus):
 
     o = "{i}.s{s}k{k}.dist".format(i=fasta_filename, k=kmer_size, s=sketch_size)
     if os.path.exists(o):
-        print >> sys.stderr, "Expected output {0} already exists. Just use it.".format(o)
+        print("Expected output {0} already exists. Just use it.".format(o), file=sys.stderr)
         os.chdir(olddir)
         return os.path.join(dirname, o)
 
@@ -71,15 +71,15 @@ def main(fasta_filename, kmer_size, sketch_size, min_dist, chunk_size, cpus):
     pool = Pool(processes=cpus)
 
     # get the sketch files
-    results = [ pool.apply_async(run_sketch, args=(inputs[i], kmer_size, sketch_size,)) for i in xrange(N) ]
+    results = [ pool.apply_async(run_sketch, args=(inputs[i], kmer_size, sketch_size,)) for i in range(N) ]
     files = [ r.get() for r in results ]
     pool.close()
     pool.join()
     # get the dist files
     pool = Pool(processes=cpus)
     results = []
-    for i in xrange(N):
-        for j in xrange(i, N):
+    for i in range(N):
+        for j in range(i, N):
             results.append(pool.apply_async(run_dist, args=(files[i], files[j], min_dist,)))
             #run_dist(files[i], files[j], min_dist)
     pool.close()
@@ -97,7 +97,7 @@ def main(fasta_filename, kmer_size, sketch_size, min_dist, chunk_size, cpus):
     for file in inputs: os.remove(file)
     for file in files: os.remove(file)
     for file in outputs: os.remove(file)
-    print >> sys.stderr, "Output written to:", os.path.join(dirname, o)
+    print("Output written to:", os.path.join(dirname, o), file=sys.stderr)
 
     os.chdir(olddir)
     return os.path.join(dirname, o)

@@ -1,6 +1,6 @@
 __author__ = 'etseng@pacb.com'
 
-import os, sys, logging, subprocess, shutil
+import os, subprocess, shutil
 import unittest
 import tempfile
 from Cogent.run_mash import main as run_mash_main
@@ -13,6 +13,7 @@ from Bio import SeqIO
 class TestCogent(unittest.TestCase):
     def test_cogent(self):
         d = tempfile.mkdtemp()
+        #input(d)
         fname = os.path.join(d ,'human_test.fa')
 
         with open(fname, 'w') as f:
@@ -31,7 +32,7 @@ class TestCogent(unittest.TestCase):
             ncut_threshold=0.2)
 
         # check that the ncut result is consistent
-        for k,v in labels2_map.iteritems():
+        for k,v in labels2_map.items():
             assert set(v) == set(data.labels2_map[k])
         output_dirs = write_output_dirs(labels2_map, seqdict, weightdict, d, output_prefix)
 
@@ -41,15 +42,19 @@ class TestCogent(unittest.TestCase):
             i = os.path.basename(o) # ex: human_test.k30_0
             i = int(i[i.rfind('_')+1:])
             subprocess.check_call("reconstruct_contig.py .", shell=True)
+            #os.symlink("in.fa", "in.trimmed.fa")
+            #run_Cogent_on_input()
             assert os.path.exists('cogent2.fa')
-            result = SeqIO.to_dict(SeqIO.parse(open('cogent2.fa'), 'fasta'))
-            for _path, _seq in data.cogent2[i].iteritems():
+            result = {}
+            reader = SeqIO.parse(open('cogent2.fa'), 'fasta')
+            for r in reader: result[r.id] = r
+            for _path, _seq in data.cogent2[i].items():
                 if str(_seq) != str(result[_path].seq):
-                    raise Exception, "TEST FAILED! Results don't agree in cogent2.fa for {0}".format(o)
+                    raise Exception("TEST FAILED! Results don't agree in cogent2.fa for {0}".format(o))
             os.chdir(d)
 
         # DONE remove test directory
-        shutil.rmtree(d)
+        #shutil.rmtree(d)
 
 if __name__ == '__main__':
     unittest.main()

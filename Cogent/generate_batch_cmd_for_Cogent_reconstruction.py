@@ -10,10 +10,10 @@ def main(args):
         fa = os.path.join(d2, 'in.fa')
         we = os.path.join(d2, 'in.weights')
         if not os.path.exists(fa):
-            print >> sys.stderr, "{0} is missing! Please fix this first.".format(fa)
+            print("{0} is missing! Please fix this first.".format(fa), file=sys.stderr)
             sys.exit(-1)
         if not os.path.exists(we):
-            print >> sys.stderr, "{0} is missing! Please fix this first.".format(we)
+            print("{0} is missing! Please fix this first.".format(we), file=sys.stderr)
             sys.exit(-1)
 
         cmd = "reconstruct_contig.py " + d2
@@ -21,7 +21,7 @@ def main(args):
         cmd += " -p {0} ".format(os.path.basename(d2))
         if args.genome_fasta_mmi is not None:
             cmd += " -G {0} -S {1} ".format(args.genome_fasta_mmi, args.species_name)
-        print cmd
+        print(cmd)
 
 
 if __name__ == "__main__":

@@ -5,7 +5,6 @@ Duplicated here for tofu installation. This one is called via cupcake.io.BioRead
 
 import re, sys
 from collections import namedtuple
-from exceptions import StopIteration
 
 Interval = namedtuple('Interval', ['start', 'end'])
                                  
@@ -30,7 +29,7 @@ class SimpleSAMReader:
     def __iter__(self):
         return self
     
-    def next(self):
+    def __next__(self):
         line = self.f.readline().strip()
         if len(line) == 0:
             raise StopIteration
@@ -141,7 +140,7 @@ class SAMReader:
     def __iter__(self):
         return self
         
-    def next(self):
+    def __next__(self):
         line = self.f.readline().strip()
         if len(line) == 0:
             raise StopIteration
@@ -308,7 +307,7 @@ class SAMRecord:
                 cur_start = cur_end + num
                 cur_end = cur_start
             else:
-                raise Exception, "Unrecognized cigar character {0}!".format(type)
+                raise Exception("Unrecognized cigar character {0}!".format(type))
             first_thing = False
         if cur_start != cur_end:
             segments.append(Interval(cur_start, cur_end))
@@ -367,7 +366,7 @@ class SAMRecord:
             
 
 class BLASRSAMReader(SAMReader):
-    def next(self):
+    def __next__(self):
         line = self.f.readline().strip()
         if len(line) == 0:
             raise StopIteration
@@ -413,7 +412,7 @@ class BLASRSAMRecord(SAMRecord):
             elif x.startswith('XS:i:'): # must be PacBio's SAM, need to update qStart
                 qs = int(x[5:]) - 1 # XS is 1-based
                 if qs > 0:
-                    print "qStart:", self.qStart
+                    print("qStart:", self.qStart)
                     assert self.qStart == 0
                     self.qStart = qs
                     self.qEnd += qs
@@ -443,7 +442,7 @@ class BLASRSAMRecord(SAMRecord):
             
             
 class GMAPSAMReader(SAMReader):
-    def next(self):
+    def __next__(self):
         while True:
             line = self.f.readline().strip()
             if len(line) == 0:
@@ -515,6 +514,6 @@ class GMAPSAMRecord(SAMRecord):
                     except KeyError:
                         self.qLen = query_len_dict[self.qID]
                 else:
-                    raise Exception, "Unable to find qID {0} in the input fasta/fastq!".format(self.qID)
+                    raise Exception("Unable to find qID {0} in the input fasta/fastq!".format(self.qID))
             self.qCoverage = (self.qEnd - self.qStart) * 1. / self.qLen    
                 

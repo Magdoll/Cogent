@@ -34,7 +34,7 @@ def read_blastn(filename, qlen_dict):
         k = fields.index(' q. start')
         l = fields.index(' q. end')
     except ValueError:
-        print >> sys.stderr, "Unable to find fields 'evalue' and 'subject title' in {0}. Abort!".format (filename)
+        print("Unable to find fields 'evalue' and 'subject title' in {0}. Abort!".format (filename), file=sys.stderr)
     f.readline()
     for line in f:
         if line.startswith('#'): continue
@@ -107,7 +107,7 @@ def is_true_gmap_chimeric(records):
     else: # all on same chromosome
         flag = False
         records.sort(key=lambda r: r.start)
-        for i in xrange(len(records)-1):
+        for i in range(len(records)-1):
             if records[i].end - records[i+1].start >= 100: # overlap by more than 100 bp, true chimeric
                 flag = True
                 break
@@ -129,7 +129,7 @@ def is_true_minimap2_chimeric(records):
     else: # all on same chromosome
         flag = False
         records.sort(key=lambda r: r.sStart)
-        for i in xrange(len(records)-1):
+        for i in range(len(records)-1):
             if records[i].sEnd - records[i+1].sStart >= 100: # overlap by more than 100 bp, true chimeric
                 flag = True
                 break
@@ -148,7 +148,7 @@ def calculate_cov_acc(d):
     worst_cov, worst_acc, has_chimeric = 100, 100, False
     if len(d) == 0: return 0, 0, False
 
-    for v in d.itervalues():
+    for v in d.values():
         c = ClusterTree(0,0)
         for x in v:
             qlen = x.qLen
@@ -217,9 +217,9 @@ def tally_for_a_Cogent_dir(dirname, writer1, writer2, genome1, genome2=None, bla
             rec1['num_blastn'] = 0
             rec1['blastn_best'] = 'NA'
         else:
-            stuff = best_of.values() # list of (e-value, name)
+            stuff = list(best_of.values()) # list of (e-value, name)
             stuff.sort()
-            rec1['num_blastn'] = sum(_n!='NA' for _e,_n in best_of.values())
+            rec1['num_blastn'] = sum(_n!='NA' for _e,_n in list(best_of.values()))
             rec1['blastn_best'] = '"' + stuff[0][1] + '"'
     writer1.writerow(rec1)
 
@@ -229,7 +229,7 @@ def tally_for_a_Cogent_dir(dirname, writer1, writer2, genome1, genome2=None, bla
     else:
         d3 = {}
 
-    for seqid, v in seq_info.iteritems():
+    for seqid, v in seq_info.items():
         contigs = [x.sID for x in v]
         acc = sum(x.identity*x.qCoverage for x in v)/sum(x.qCoverage for x in v)
 

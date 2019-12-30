@@ -10,7 +10,7 @@ import tally_Cogent_results as sp
 
 def main(cogent_dir, genome1, output_prefix, genome2=None, blastn_filename=None):
 
-    dirs = filter(lambda x: os.path.isdir(x) and os.path.exists(os.path.join(x,'COGENT.DONE')), glob.glob(cogent_dir+'/*'))
+    dirs = [x for x in glob.glob(cogent_dir+'/*') if os.path.isdir(x) and os.path.exists(os.path.join(x,'COGENT.DONE'))]
 
     FIELDS_fam = ['gene_family', 'input_size', 'num_Cogent_contigs',
               'num_genome_contig', 'genome_cov', 'genome_acc',
@@ -39,7 +39,7 @@ def main(cogent_dir, genome1, output_prefix, genome2=None, blastn_filename=None)
     for d in dirs:
         #try:
         sp.tally_for_a_Cogent_dir(d, writer1, writer2, genome1, genome2, blastn_filename)
-        print d
+        print(d)
         #except:
         #    f3.write("error with {0}. ignore\n".format(d))
 

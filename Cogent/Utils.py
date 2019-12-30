@@ -12,9 +12,9 @@ def trim_ends(seq, dun_trim_if_all_lower=True):
     Remove ends that are lower case
     However if whole sequence is lower case???? return everything =___=
     """
-    for i in xrange(len(seq)):
+    for i in range(len(seq)):
         if str.isupper(seq[i]): break
-    for j in xrange(len(seq)-1,-1,-1):
+    for j in range(len(seq)-1,-1,-1):
         if str.isupper(seq[j]): break
 
     if i>=j+1 and dun_trim_if_all_lower:
@@ -23,7 +23,7 @@ def trim_ends(seq, dun_trim_if_all_lower=True):
 
 def run_external_call(cmd):
     if subprocess.check_call(cmd, shell=True) != 0:
-        raise Exception, "Failed to run: {0}".format(cmd)
+        raise Exception("Failed to run: {0}".format(cmd))
 
 
 def run_minimap2(ref='cogent.fa', infile='in.trimmed.fa', format='PAF'):
@@ -38,7 +38,7 @@ def run_minimap2(ref='cogent.fa', infile='in.trimmed.fa', format='PAF'):
         outfile = infile + '.sam'
         run_external_call("minimap2 -ax splice -t 1 {d} {i} > {o}".format(d=ref, i=infile, o=outfile))
     else:
-        raise Exception, "Unrecognized minimap2 output format: {0}. Abort!".format(format)
+        raise Exception("Unrecognized minimap2 output format: {0}. Abort!".format(format))
     return outfile
 
 def post_minimap2_processing(ref='cogent.fa', sam='in.trimmed.fa.sam', output_prefix='cogent2', seqrecs=[]):
@@ -55,12 +55,12 @@ def post_minimap2_processing(ref='cogent.fa', sam='in.trimmed.fa.sam', output_pr
     if len(good_for) == 0:
         log.warning("[BUG] good_for in post_minimap2_processing is empty. Probably from cycles. CHECK!")
     else:
-        N = max(max(v) for v in good_for.itervalues())+1
+        N = max(max(v) for v in good_for.values())+1
         try:
-            prob = make_into_lp_problem(good_for.items(), N, add_noise=False)
+            prob = make_into_lp_problem(list(good_for.items()), N, add_noise=False)
             prob.solve()
         except:
-            prob = make_into_lp_problem(good_for.items(), N, add_noise=True)
+            prob = make_into_lp_problem(list(good_for.items()), N, add_noise=True)
             prob.solve()
         for v in prob.variables():
             log.debug("{0} = {1}".format(v.name, v.varValue))

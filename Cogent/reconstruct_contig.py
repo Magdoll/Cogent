@@ -66,7 +66,7 @@ def run_Cogent_on_split_files(split_dirs, depth):
     for d in split_dirs:
         os.chdir(d)
         if os.path.exists('cogent2.fa'):
-            print >> sys.stderr, "skipping {0} because done already".format(d)
+            print("skipping {0} because done already".format(d), file=sys.stderr)
             os.chdir(olddir)
             continue
         try:
@@ -157,12 +157,12 @@ def run_Cogent_on_input():
         sp.add_seq_to_graph(G, node_d, path_d, str(r.seq), r.id, seqweights[r.id])
         seqrecs.append(r)
     del node_d[None]
-    mermap = dict((v,k) for k,v in node_d.iteritems())
+    mermap = dict((v,k) for k,v in node_d.items())
 
 
 
     # resolve all homopolymers
-    homo_nodes = filter(lambda n: G.has_edge(n, n), G.nodes())
+    homo_nodes = [n for n in G.nodes() if G.has_edge(n, n)]
     for n in homo_nodes:
         sp.untangle_homopolymer_helper(G, path_d, mermap, seqweights, n)
 
@@ -173,7 +173,7 @@ def run_Cogent_on_input():
 
     # cycle detection and abort if detected
     # (this should not happen with splice_cycle.detect_and_replace_cycle run)
-    for k,v in path_d.iteritems():
+    for k,v in path_d.items():
         for x in v:
             if v.count(x) > 1:
                 log.info("CYCLE detected through path analysis! Raise CycleDetectedException!")
@@ -184,7 +184,7 @@ def run_Cogent_on_input():
         log.info("Doing nx.cycle_detection....")
         iter = nx.simple_cycles(G)
         for _it in iter:
-            print >> sys.stderr, "CYCLE detected through simple_cycles! Raise CycleDetectedException!"
+            print("CYCLE detected through simple_cycles! Raise CycleDetectedException!", file=sys.stderr)
             with open("CYCLE_DETECTED", 'w') as f: pass # touch the file
             raise CycleDetectedException
 
@@ -219,7 +219,7 @@ def run_Cogent_on_input():
 
     time2 = time.time()
 
-    keys = path_d.keys()
+    keys = list(path_d.keys())
     keys.sort()
     good_for, paths = find_minimal_path_needed_to_explain_pathd(G, path_d, keys)
     solve_with_lp_and_reduce(good_for, paths, mermap)

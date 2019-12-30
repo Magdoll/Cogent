@@ -19,7 +19,7 @@ def add_seq_to_graph(G, node_d, path_d, seq, seqid, seq_weight):
     #log.info("Sanity check: in add_seq_to_graph, k-mer size is: {0}".format(cc_settings.KMER_SIZE))
     seq = seq.upper()
 
-    max_node_index = max(node_d.itervalues()) + 1
+    max_node_index = max(node_d.values()) + 1
     
     prev = seq[:cc_settings.KMER_SIZE]
     if prev in node_d:
@@ -30,7 +30,7 @@ def add_seq_to_graph(G, node_d, path_d, seq, seqid, seq_weight):
         node_d[prev] = s
     path = [s]
 
-    for i in xrange(1, len(seq)-cc_settings.KMER_SIZE+1):
+    for i in range(1, len(seq)-cc_settings.KMER_SIZE+1):
         next = seq[i:i+cc_settings.KMER_SIZE]
         if next in node_d:
             t = node_d[next]
@@ -67,13 +67,13 @@ def untangle_homopolymer_helper(G, path_d, mermap, seqweights, node):
     """
     max_node_index = max(G.nodes()) + 1
     homo_rev_mermap = {}
-    for k,path in path_d.iteritems():
+    for k,path in path_d.items():
         weight = seqweights[k]
         if node in path and path.count(node) >= 2:
             # find the longest stretch of repeated node in path
             i = path.index(node)
             while i < len(path) - 1:
-                for j in xrange(i+1, len(path)):
+                for j in range(i+1, len(path)):
                     if path[j]!=node:
                         if j - i == 1: # just a single occurrence, skip over it
                             break
@@ -139,7 +139,7 @@ def untangle_homopolymer_helper(G, path_d, mermap, seqweights, node):
     G.remove_edge(node, node)
     can_del_node = True
     # can only remove the node if it is not used anymore in G
-    for path in path_d.itervalues():
+    for path in path_d.values():
         if node in path:
             can_del_node = False
 
@@ -161,9 +161,9 @@ def contract_sinks(G, path_d, mermap):
     or
     path = [ sink ] update to [ pred ]
     """
-    sinks = filter(lambda n: G.out_degree(n)==0 and G.in_degree(n)==1, G.nodes())
+    sinks = [n for n in G.nodes() if G.out_degree(n)==0 and G.in_degree(n)==1]
     for sink in sinks:
-        pred = G.predecessors(sink).next()
+        pred = next(G.predecessors(sink))
         # confirm that pred must have no other outgoing edges
         if G.out_degree(pred) > 1: continue # skip it, has other outgoing edges
         # contract it by simply updating pred and removing sink from G
@@ -201,9 +201,9 @@ def find_dangling_sinks(G, path_d, mermap):
     pred = [prefix] + [suffix] + [extra]
     n' = [just use last k-mer of extra] + [...]
     """
-    cand_sinks = filter(lambda n: G.out_degree(n)==0 and G.in_degree(n)==1, G.nodes())
+    cand_sinks = [n for n in G.nodes() if G.out_degree(n)==0 and G.in_degree(n)==1]
     for sink in cand_sinks:
-        pred = G.predecessors(sink).next()
+        pred = next(G.predecessors(sink))
         for n in G.successors(pred):
             if n == sink or n not in G: continue
             if splice_align.node_is_similar(mermap[sink], mermap[n][:len(mermap[sink])]):
@@ -239,7 +239,7 @@ def collapse_chain(G, chain, mermap, path_d):
     weights_in_path = [G.get_edge_data(chain[0], chain[1])['weight']]
     n0 = chain[0]
     newmer = mermap[chain[0]]
-    for i in xrange(1, len(chain)-1):
+    for i in range(1, len(chain)-1):
         n = chain[i]
         newmer += mermap[n][(cc_settings.KMER_SIZE-1):]
         weights_in_path.append(G.get_edge_data(chain[i], chain[i+1])['weight'])
@@ -267,7 +267,7 @@ def collapse_chain(G, chain, mermap, path_d):
             if x not in chain[:-1]: newp.append(x)
             else: # first encounter of something in chain
                 break
-        for j in xrange(len(oldp)-1, i-1, -1):
+        for j in range(len(oldp)-1, i-1, -1):
             x = oldp[j]
             if x not in chain: newp2.append(x)
             else: 
@@ -289,7 +289,7 @@ def reachability(G, mermap, visited,  path_d, debug=False):
     Find all unipaths and contract them!
     G must NOT have cycles so we can successfully traverse through all of them!
     """
-    sources = filter(lambda n: G.in_degree(n)==0, G.nodes())
+    sources = [n for n in G.nodes() if G.in_degree(n)==0]
     for source in sources:
         reachability_helper(G, source, [], visited, mermap, path_d, debug)
 
@@ -321,7 +321,7 @@ def reachability_helper(G, cur, chain, visited, mermap, path_d, debug=False):
             for n in G.successors(cur):
                 reachability_helper(G, n, [], visited, mermap, path_d, debug)
         else: # outdeg == 1, continue the chain
-            reachability_helper(G, G.successors(cur).next(), chain + [cur], visited, mermap, path_d, debug)
+            reachability_helper(G, next(G.successors(cur)), chain + [cur], visited, mermap, path_d, debug)
     elif outdeg == 1: # indeg is 0 or > 1, outdeg == 1
         if indeg >= 1 and len(chain) >= 2:
             if debug: pdb.set_trace()
@@ -332,7 +332,7 @@ def reachability_helper(G, cur, chain, visited, mermap, path_d, debug=False):
         #    log.debug("chain found! {0}".format(chain)) # exclude itself
         #    collapse_chain(G, chain, mermap, path_d)
         # possible chain starter, includes itself becuz outdeg is 1
-        reachability_helper(G, G.successors(cur).next(), [cur], visited, mermap, path_d, debug)
+        reachability_helper(G, next(G.successors(cur)), [cur], visited, mermap, path_d, debug)
     else: # outdeg!=1, indeg!=1
         for n in G.successors(cur):
             reachability_helper(G, n, [], visited, mermap, path_d, debug)
@@ -372,7 +372,7 @@ def find_source_bubbles(G, path_d, mermap):
         del mermap[n_to_del]
 
     in_same_path = make_in_same_path(path_d)
-    sources = filter(lambda n: G.in_degree(n) == 0, G.nodes())
+    sources = [n for n in G.nodes() if G.in_degree(n) == 0]
     for src1 in sources:
         if src1 not in G: continue # deleted in the loop below
         succ = list(G.successors(src1))
@@ -438,7 +438,7 @@ def find_bubbles(G, path_d, mermap):
          pred -> some_node -> n2
         """
         assert G.in_degree(n1) == 1
-        pred = G.predecessors(n1).next()
+        pred = next(G.predecessors(n1))
         return path_finder(G, n2, pred, [n2], 2)
 
     def replace_node(n_to_del, n_to_replace_with):
@@ -496,9 +496,9 @@ def find_bubbles(G, path_d, mermap):
         # note: this filter must be done simultaneously because G.remove_node will dynamically change the degrees!
 
         nodes_in_path = set()
-        for path in path_d.itervalues():
+        for path in path_d.values():
             nodes_in_path = nodes_in_path.union(path)
-        safe_to_remove = filter(lambda x: G.out_degree(x)<=1 and x not in nodes_in_path, path_to_del)
+        safe_to_remove = [x for x in path_to_del if G.out_degree(x)<=1 and x not in nodes_in_path]
         #safe_to_remove = filter(lambda x: G.in_degree(x)<=1 and G.out_degree(x)<=1 and x not in nodes_in_path, path_to_del)
         for node in safe_to_remove:
             log.debug("safe to delete from G: {0}".format(node))
@@ -507,7 +507,7 @@ def find_bubbles(G, path_d, mermap):
     
 
     in_same_path = make_in_same_path(path_d)
-    cands = filter(lambda n: G.in_degree(n)>=2, G.nodes())
+    cands = [n for n in G.nodes() if G.in_degree(n)>=2]
     for n in cands:
         if n not in G: continue # deleted in loop below
         _pred = list(G.predecessors(n))

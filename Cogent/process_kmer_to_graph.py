@@ -16,12 +16,12 @@ def run_ncut(G, labels2_map, ncut_map, nodelist, ncut_threshold):
     start_t = time.time()
     labels = np.array([i for i in G.nodes()])
     labels2 = graph.cut_normalized(labels, G, thresh=ncut_threshold)
-    for i1, i2 in itertools.izip(labels, labels2):
+    for i1, i2 in zip(labels, labels2):
         labels2_map[i2].append(nodelist[i1])
         ncut_map[i1] = i2
 
-    print >> sys.stderr, "(subgraph) has {0} nodes. ncut down to {1} partitions in {2} sec.".format(\
-        G.number_of_nodes(), len(set(labels2)), time.time()-start_t)
+    print("(subgraph) has {0} nodes. ncut down to {1} partitions in {2} sec.".format(\
+        G.number_of_nodes(), len(set(labels2)), time.time()-start_t), file=sys.stderr)
 
 
 def write_output_dirs(labels2_map, seqdict, weightdict, output_dir, output_prefix):
@@ -32,7 +32,7 @@ def write_output_dirs(labels2_map, seqdict, weightdict, output_dir, output_prefi
     # make the directory and the subdirs
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    for ncut_label, members in labels2_map.iteritems():
+    for ncut_label, members in labels2_map.items():
         d2 = os.path.join(output_dir, output_prefix+'_'+str(ncut_label))
         os.makedirs(d2)
         output_dirs.append(d2)
@@ -57,20 +57,20 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False, weight
     '''
 
     # nodelist: dict of seqid --> index
-    nodelist = seqdict.keys()
+    nodelist = list(seqdict.keys())
     nodelist = dict((x,i) for i,x in enumerate(nodelist))  # seqid --> index
 
 
-    print >> sys.stderr, "making weight graph from ", dist_filename
+    print("making weight graph from ", dist_filename, file=sys.stderr)
     G = pk.make_weighted_graph_from_mash_dist(nodelist, dist_filename, threshold=weight_threshold)
     for n in G:
         G.node[n]['labels'] = [n]
-    print >> sys.stderr, "graph contains {0} nodes, {1} edges".format(G.number_of_nodes(), G.number_of_edges())
+    print("graph contains {0} nodes, {1} edges".format(G.number_of_nodes(), G.number_of_edges()), file=sys.stderr)
 
     # now we convert nodelist back to index --> seqid
-    nodelist = dict((i,x) for (x,i) in nodelist.iteritems())
+    nodelist = dict((i,x) for (x,i) in nodelist.items())
 
-    print >> sys.stderr, "performing ncut on graph...."
+    print("performing ncut on graph....", file=sys.stderr)
     ncut_map = {} # label1/node id --> ncut label
     labels2_map = defaultdict(lambda: []) # ncut label --> list of seqids in that cut
     for g in nx.connected_component_subgraphs(G):
@@ -79,8 +79,8 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False, weight
     seqid_unassigned = set(seqdict.keys())
     with open(output_prefix + '.partition.txt', 'w') as f:
         f.write("Partition\tSize\tMembers\n")
-        for k,v in labels2_map.iteritems():
-            print >> sys.stderr, k,v
+        for k,v in labels2_map.items():
+            print(k,v, file=sys.stderr)
             f.write("{0}_{1}\t{2}\t{3}\n".format(output_prefix, k, len(v), ",".join(v)))
             for seqid in v:
                 seqid_unassigned.remove(seqid)
@@ -129,15 +129,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not os.path.exists(args.fasta_filename):
-        print >> sys.stderr, "Fasta filename {0} does not exist. Abort.".format(args.fasta_filename)
+        print("Fasta filename {0} does not exist. Abort.".format(args.fasta_filename), file=sys.stderr)
         sys.exit(-1)
 
     if not os.path.exists(args.dist_filename):
-        print >> sys.stderr, "Mash dist filename {0} does not exist. Abort.".format(args.dist_filename)
+        print("Mash dist filename {0} does not exist. Abort.".format(args.dist_filename), file=sys.stderr)
         sys.exit(-1)
 
     if os.path.exists(args.output_dir):
-        print >> sys.stderr, "WARNING: Output directory {0} already exists".format(args.output_dir)
+        print("WARNING: Output directory {0} already exists".format(args.output_dir), file=sys.stderr)
 
 
     seqdict = dict((r.id.split()[0], r) for r in SeqIO.parse(open(args.fasta_filename),'fasta'))

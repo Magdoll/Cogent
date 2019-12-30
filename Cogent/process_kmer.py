@@ -13,7 +13,7 @@ def mash_distance_reader(dist_filename):
     """
     for line in open(dist_filename):
         raw = line.strip().split()
-        a, b = map(int, raw[4].split('/'))
+        a, b = list(map(int, raw[4].split('/')))
         if raw[0] != raw[1]:
             yield MashDist(id1=raw[0], id2=raw[1], pval=float(raw[2]), sim=a*1./b)
 
@@ -24,7 +24,7 @@ def make_weighted_graph_from_mash_dist(nodelist, dist_filename, threshold):
     for r in mash_distance_reader(dist_filename):
         if r.sim >= threshold:
             if r.id1 not in nodelist or r.id2 not in nodelist:
-                print >> sys.stderr, "id1 {0} or id2 {1} not in nodelist. Ignore.".format(r.id1, r.id2)
+                print("id1 {0} or id2 {1} not in nodelist. Ignore.".format(r.id1, r.id2), file=sys.stderr)
                 continue
             G.add_edge(nodelist[r.id1], nodelist[r.id2], weight=r.sim)
 

@@ -29,12 +29,12 @@ def precycle_kmer_adjustment(kmer_size):
     seqdict = SeqIO.to_dict(SeqIO.parse(open('in.trimmed.fa'), 'fasta'))
     kmer_usage = defaultdict(lambda: defaultdict(lambda: [])) # kmer -> (seqid, i)
     for r in SeqIO.parse(open('in.trimmed.fa'),'fasta'):
-        for i in xrange(len(r.seq)-kmer_size):
+        for i in range(len(r.seq)-kmer_size):
             kmer_usage[str(r.seq)[i:i+kmer_size]][r.id].append(i)
 
     max_kmer_needed = []
-    for kmer,v in kmer_usage.iteritems():
-        for seqid, indices in v.iteritems():
+    for kmer,v in kmer_usage.items():
+        for seqid, indices in v.items():
             if len(indices) > 1: # kmer appeared more than once in the same sequence
                 max_kmer_needed.append(max_common_sequence_length(seqdict[seqid], indices, kmer_size))
     if len(max_kmer_needed) == 0:
@@ -63,7 +63,7 @@ def detect_and_replace_cycle(G, path_d, weight_d, mermap, max_node_index, kmer_s
     (b) reduce one weight in the path and if falls to zero, remove nodes
     (c) update path
     """
-    for seqid, path in path_d.iteritems():
+    for seqid, path in path_d.items():
         has_cycle = True
         while has_cycle:
             has_cycle = False
@@ -88,7 +88,7 @@ def detect_and_replace_cycle(G, path_d, weight_d, mermap, max_node_index, kmer_s
                         G.add_edge(path[i-1], newnode, weight=weight_d[seqid])
                     if j < len(path): # if j=last, then nothing to connect with after
                         G.add_edge(newnode, path[j], weight=weight_d[seqid])
-                    for k in xrange(max(0,i-1), min(j, len(path)-1)):
+                    for k in range(max(0,i-1), min(j, len(path)-1)):
                         s, t = path[k], path[k+1]
                         G[s][t]['weight'] -= weight_d[seqid]
                     # now we can update the path
@@ -100,10 +100,11 @@ def detect_and_replace_cycle(G, path_d, weight_d, mermap, max_node_index, kmer_s
                     break
 
     # clean up zero-weight edges and zero degree nodes
-    # TODO here
+    edges_to_remove = []
     for s,t,d in G.edges(data=True):
         if d['weight']==0:
-            G.remove_edge(s, t)
+            edges_to_remove.append((s,t))
+    G.remove_edges_from(edges_to_remove)
     bad = []
     for n in G.nodes():
         if G.degree(n) == 0: bad.append(n)

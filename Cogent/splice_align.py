@@ -1,10 +1,9 @@
 __author__ = 'etseng@pacb.com'
 
 import os, sys, subprocess
-from ssw_wrap import Aligner
 from Bio import SeqIO
-from settings import EXPECTED_ERR_RATE
-
+from .settings import EXPECTED_ERR_RATE
+import parasail
 
 def iter_cigar_string(cigar_string):
     num = cigar_string[0]
@@ -15,7 +14,6 @@ def iter_cigar_string(cigar_string):
         else:
             num += s
 
-
 def node_is_similar(seq1, seq2):
     l1 = len(seq1)
     l2 = len(seq2)
@@ -25,16 +23,16 @@ def node_is_similar(seq1, seq2):
         l1, l2 = l2, l1
         seq1, seq2 = seq2, seq1
     # always make seq1 the longer one
-    o1 = Aligner(seq1, match=2, mismatch=5, gap_open=3, gap_extend=1, report_secondary=False, report_cigar=False)
+    o1 = parasail.sg_qx_trace(seq1, seq2, 3, 1, parasail.matrix_create("ACGT", 2, -5))
     # require the the whole (shorter) seq2 must be aligned
     # and set min score to approx 90% accuracy
 
     if EXPECTED_ERR_RATE == 0:
-        res = os.align(seq2, min_score=l2*2*1.0, min_len=l2*1.0)
+        return o1.score > l2*2*1.0
     elif EXPECTED_ERR_RATE < 2:
-        res = o1.align(seq2, min_score=int(l1*2*.80), min_len=int(l2*.9))
+        return o1.score > l1*2*0.8
     else:
-        raise Exception, "Expected error rate not implemented for {0}% and above".format(EXPECTED_ERR_RATE)
+        raise Exception("Expected error rate not implemented for {0}% and above".format(EXPECTED_ERR_RATE))
     return res is not None
 
 def node_is_skipping(seq1, seq2, kmer_size):
@@ -76,14 +74,14 @@ def get_consensus_through_voting(seq1, weight1, seq2, weight2):
 def get_consensus_through_pbdagcon(seq1, weight1, seq2, weight2):
     fname = os.tempnam("/tmp") + '.fasta'
     with open(fname, 'w') as f:
-        for i in xrange(min(10, weight1)): # max cutoff at 10
+        for i in range(min(10, weight1)): # max cutoff at 10
             f.write(">test1_{0}\n{1}\n".format(i, seq1))
-        for i in xrange(min(10, weight2)): # max cutoff at 10
+        for i in range(min(10, weight2)): # max cutoff at 10
             f.write(">test2_{0}\n{1}\n".format(i, seq2))
 
     cmd = "ice_pbdagcon.py --maxScore 10 {0} {0}.g_con g_con".format(fname)
     if subprocess.check_call(cmd, shell=True) == -1:
-        raise Exception, "Trouble running cmd: ", cmd
+        raise Exception("Trouble running cmd: ").with_traceback(cmd)
 
     gcon_filename = fname + '.g_con.fasta'
     gref_filename = fname + '.g_con_ref.fasta'
@@ -92,7 +90,7 @@ def get_consensus_through_pbdagcon(seq1, weight1, seq2, weight2):
     elif os.path.exists(gref_filename):
         return str(SeqIO.parse(open(gref_filename), 'fasta').next().seq)
     else:
-        raise Exception, "Could not get results from running cmd:", cmd
+        raise Exception("Could not get results from running cmd:").with_traceback(cmd)
 
 
 def validate_reconstructed_seq(seq, orig):
@@ -104,45 +102,10 @@ def validate_reconstructed_seq(seq, orig):
       (deletions w.r.t could just be exon skipping or minor base errors)
     we only care that there is NOT a lot of insertions (which would indicate error in my bubble solution)
     """
-    o1 = Aligner(seq, match=2, mismatch=5, gap_open=3, gap_extend=1, report_secondary=False, report_cigar=True)
-    l2 = len(orig)
-    res = o1.align(orig, min_score=l2*2*.90, min_len=l2)
-    for num, type in iter_cigar_string(res.cigar_string):
+    o1 = parasail.sg_qx_trace(seq, orig, 3, 1, parasail.matrix_create("ACGT", 2, -5))
+    if o1.score < l2*2*.90: return False, o1.cigar.decode
+    for num, type in iter_cigar_string(o1.cigar.decode):
         if type == 'I' and num > 5:
-            return False, res.cigar_string
-    return True, res.cigar_string
+            return False, o1.cigar.decode
+    return True, o1.cigar.decode
 
-
-# BELOW OBSOLETE CODE NOT USING ALIGNER and ugly
-
-# def OLD_node_is_similar(seq1, seq2, allowed_error_left):
-#     """
-#     calculate the distance between the first k-mer of seq1/seq2
-#     we assume a max of 1 error
-#     """
-#     for i in xrange(min(len(seq1), len(seq2))):
-#         if seq1[i]!=seq2[i]: # diff encountered
-#             if allowed_error_left == 0: return False
-#             # could be: mismatch, which means seq1[i+1:]== seq2[i+1:]
-#             # could be: insertion, which means seq1[i+1:] == seq2[i:-1]
-#             # could be: deletion, which means seq1[i:-1] == seq2[i+1:]
-#             return node_is_similar(seq1[i+1:], seq2[i+1:], allowed_error_left-1) or \
-#                node_is_similar(seq1[i+1:], seq2[i:-1], allowed_error_left-1) or \
-#                node_is_similar(seq1[i:-1], seq2[i+1:], allowed_error_left-1)
-#     return True
-
-
-#
-# def OLD_node_is_skipping(seq1, seq2, allowed_error_left):
-#     """
-#     Let seq1 always be the shorter one. If seq1 is the exon skipped one, then
-#
-#     seq_next is the next node for both seq1 and seq2
-#
-#     seq1 = [common prefix w/ seq2] + [common prefix w/ seq_next]
-#     seq2 = [common prefix w/ seq2] + <extra exon here> + [common prefix w/ seq_next]
-#     """
-#     if len(seq1) > len(seq2): seq1, seq2 = seq2, seq1 # let seq1 always be the shorter
-#     # already know that the last k-1 base is seq_next,
-#     # so just need to see that seq1[:k-1] is a complete common prefix of seq2
-#     return splice_align.node_is_similar(seq1[:-(KMER_SIZE-1)], seq2, allowed_error_left)
