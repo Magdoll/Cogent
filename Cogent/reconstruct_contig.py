@@ -270,6 +270,7 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--expected_error_rate", type=int, default=1, help="Expected error rate (default: 1%%)")
     parser.add_argument("--nx_cycle_detection", default=False, action="store_true", help="Cycle detection using networkx (default: off), will increase run-time. Recommend for debugging failed cases only.")
     parser.add_argument("-k", "--kmer_size", type=int, default=30, help="kmer size (default: 30)")
+    parser.add_argument("--max_split_in_size", type=int, default=20, help="Max split chunk size (default: 20)")
     parser.add_argument("-p", "--output_prefix", help="Output path prefix (ex: sample1)")
     parser.add_argument("-G", "--genome_fasta_mmi", default=None, help="Optional genome fasta or mmi (ex: genome.fasta or genome.mmi). If provided, Cogent output will be mapped to the genome using minimap2.")
     parser.add_argument("-S", "--species_name", default="NA", help="Species name (optional, only used if genome fasta/mmi provided).")
@@ -278,6 +279,8 @@ if __name__ == "__main__":
     parser.add_argument("--debug", action="store_true", default=False)
 
     args = parser.parse_args()
+
+    cc_settings.MAX_SPLIT_IN_SIZE = args.max_split_in_size
 
     cc_settings.KMER_SIZE = args.kmer_size
     assert sp.cc_settings.KMER_SIZE == args.kmer_size
@@ -341,9 +344,10 @@ if __name__ == "__main__":
         os.chdir(owd)
     main_success = False
     max_kmer_to_try = max(200, cc_settings.KMER_SIZE)
+    abs_dirname = os.path.abspath(args.dirname)
     while cc_settings.KMER_SIZE <= max_kmer_to_try:
         try:
-            os.chdir(args.dirname)
+            os.chdir(abs_dirname)
             main()
             main_success = True
             break
