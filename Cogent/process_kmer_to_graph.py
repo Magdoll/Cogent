@@ -64,7 +64,7 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False, weight
     print("making weight graph from ", dist_filename, file=sys.stderr)
     G = pk.make_weighted_graph_from_mash_dist(nodelist, dist_filename, threshold=weight_threshold)
     for n in G:
-        G.node[n]['labels'] = [n]
+        G.nodes[n]['labels'] = [n]
     print("graph contains {0} nodes, {1} edges".format(G.number_of_nodes(), G.number_of_edges()), file=sys.stderr)
 
     # now we convert nodelist back to index --> seqid
@@ -73,7 +73,8 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False, weight
     print("performing ncut on graph....", file=sys.stderr)
     ncut_map = {} # label1/node id --> ncut label
     labels2_map = defaultdict(lambda: []) # ncut label --> list of seqids in that cut
-    for g in nx.connected_component_subgraphs(G):
+    for tmp_nodes in nx.connected_components(G):
+        g = nx.Graph(nx.subgraph(G, tmp_nodes))
         run_ncut(g, labels2_map, ncut_map, nodelist, ncut_threshold)
 
     seqid_unassigned = set(seqdict.keys())
@@ -89,9 +90,9 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False, weight
     if not has_pbid:
         # ----- version where there is no pbid (no genome answer)
         for n in G:
-            G.node[n]['label'] = str(ncut_map[n])  # label is the assignment of ncut
-            G.node[n]['gene'] =  str(nodelist[n])   # since we don't know the gene, just let it be seqid
-            G.node[n]['labels'] = str(G.node[n]['labels'])  # make it string so can write to graphml
+            G.nodes[n]['label'] = str(ncut_map[n])  # label is the assignment of ncut
+            G.nodes[n]['gene'] =  str(nodelist[n])   # since we don't know the gene, just let it be seqid
+            G.nodes[n]['labels'] = str(G.nodes[n]['labels'])  # make it string so can write to graphml
     else:
         # ----- version where there is pbid
         nodelist = np.array(nodelist)
@@ -100,8 +101,8 @@ def family_finding(dist_filename, seqdict, output_prefix, has_pbid=False, weight
             pbid = seqid.split('.')[1]
             gene_answer[pbid].append(i)
             if i in G:
-                G.node[i]['gene'] = str(pbid) # this is the ground truth
-                G.node[i]['label'] = str(ncut_map[i]) # this is the ncut label
+                G.nodes[i]['gene'] = str(pbid) # this is the ground truth
+                G.nodes[i]['label'] = str(ncut_map[i]) # this is the ncut label
         labels = np.array([i for i in G.nodes()])
         labels2 = np.array([ncut_map[i] for i in G.nodes()])
         pos = nx.random_layout(G)
