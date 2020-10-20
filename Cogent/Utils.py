@@ -26,16 +26,16 @@ def run_external_call(cmd):
         raise Exception("Failed to run: {0}".format(cmd))
 
 
-def run_minimap2(ref='cogent.fa', infile='in.trimmed.fa', format='PAF'):
+def run_minimap2(ref='cogent.fa', infile='in.trimmed.fa', format='PAF', outfile=None):
     """
     Map input to cogent contig using minimap2. Replacement of run_gmap().
     NOTE: output will be in PAF format!
     """
     if format=='PAF':
-        outfile = infile + '.paf'
+        if outfile is None: outfile = infile + '.paf'
         run_external_call("minimap2 -x splice -t 1 {d} {i} > {o}".format(d=ref, i=infile, o=outfile))
     elif format=='SAM':
-        outfile = infile + '.sam'
+        if outfile is None: outfile = infile + '.sam'
         run_external_call("minimap2 -ax splice -t 1 {d} {i} > {o}".format(d=ref, i=infile, o=outfile))
     else:
         raise Exception("Unrecognized minimap2 output format: {0}. Abort!".format(format))

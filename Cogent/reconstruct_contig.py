@@ -253,7 +253,7 @@ def main():
         run_Cogent_on_split_files(dirs, depth=0)
 
     # align input to cogent2 so we can use it for evaluation later;
-    run_minimap2(ref='cogent2.fa', infile='in.trimmed.fa', format='SAM')
+    run_minimap2(ref='cogent2.fa', infile='in.trimmed.fa', format='SAM', outfile='in.trimmed.fa.cogent2.sam')
 
 
     # rewrite cogent2.fa with prefix
@@ -270,7 +270,7 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--expected_error_rate", type=int, default=1, help="Expected error rate (default: 1%%)")
     parser.add_argument("--nx_cycle_detection", default=False, action="store_true", help="Cycle detection using networkx (default: off), will increase run-time. Recommend for debugging failed cases only.")
     parser.add_argument("-k", "--kmer_size", type=int, default=30, help="kmer size (default: 30)")
-    parser.add_argument("--max_split_in_size", type=int, default=20, help="Max split chunk size (default: 20)")
+    parser.add_argument("  n", type=int, default=20, help="Max split chunk size (default: 20)")
     parser.add_argument("-p", "--output_prefix", help="Output path prefix (ex: sample1)")
     parser.add_argument("-G", "--genome_fasta_mmi", default=None, help="Optional genome fasta or mmi (ex: genome.fasta or genome.mmi). If provided, Cogent output will be mapped to the genome using minimap2.")
     parser.add_argument("-S", "--species_name", default="NA", help="Species name (optional, only used if genome fasta/mmi provided).")
