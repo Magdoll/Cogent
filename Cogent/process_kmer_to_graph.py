@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os, sys, time, itertools
 from collections import defaultdict, namedtuple
 import networkx as nx

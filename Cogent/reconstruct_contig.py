@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 __author__ = 'etseng@pacb.com'
 
 import os
