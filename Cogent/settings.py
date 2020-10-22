@@ -1,4 +1,4 @@
-__author__ = 'lachesis'
+__author__ = 'etseng@pacb.com'
 
 
 KMER_SIZE = 30
@@ -8,3 +8,4 @@ NX_CYCLE_DETECTION = False
 MAX_SPLIT_IN_SIZE = 20
 MAX_POST_SPLIT_IN_SIZE = 50
 MAX_RECUR_DEPTH = 2
+RANDOMLY_RESOLVE_DANGLES = False

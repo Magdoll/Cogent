@@ -209,6 +209,9 @@ def run_Cogent_on_input():
         sp.contract_sinks(G, path_d, mermap)
         sp.find_dangling_sinks(G, path_d, mermap)
         sp.reachability(G, mermap, {}, path_d)
+        if cc_settings.RANDOMLY_RESOLVE_DANGLES:
+            sp.contract_ambiguous_source(G, path_d, mermap)
+            sp.contract_ambiguous_sink(G, path_d, mermap)
         #assert sanity_check_path_all_valid(path_d, G)
         if G.number_of_nodes() == cur_num_nodes:
             break
@@ -270,8 +273,9 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--expected_error_rate", type=int, default=1, help="Expected error rate (default: 1%%)")
     parser.add_argument("--nx_cycle_detection", default=False, action="store_true", help="Cycle detection using networkx (default: off), will increase run-time. Recommend for debugging failed cases only.")
     parser.add_argument("-k", "--kmer_size", type=int, default=30, help="kmer size (default: 30)")
-    parser.add_argument("  n", type=int, default=20, help="Max split chunk size (default: 20)")
+    parser.add_argument("-n", "--max_split_in_size", type=int, default=20, help="Max split chunk size (default: 20)")
     parser.add_argument("-p", "--output_prefix", help="Output path prefix (ex: sample1)")
+    parser.add_argument("-R", "--randomly_resolve_ambiguous_dangling", action="store_true", default=False, help="Randomly resolve ambiguous alternative start/end sites (default: off)")
     parser.add_argument("-G", "--genome_fasta_mmi", default=None, help="Optional genome fasta or mmi (ex: genome.fasta or genome.mmi). If provided, Cogent output will be mapped to the genome using minimap2.")
     parser.add_argument("-S", "--species_name", default="NA", help="Species name (optional, only used if genome fasta/mmi provided).")
     parser.add_argument("--dun_trim_sequence", default=False, action="store_true", help="Don't trim away lower case bases of the input sequences (default: off)")
@@ -279,6 +283,8 @@ if __name__ == "__main__":
     parser.add_argument("--debug", action="store_true", default=False)
 
     args = parser.parse_args()
+
+    cc_settings.RANDOMLY_RESOLVE_DANGLES = args.randomly_resolve_ambiguous_dangling
 
     cc_settings.MAX_SPLIT_IN_SIZE = args.max_split_in_size
 

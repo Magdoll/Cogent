@@ -592,6 +592,87 @@ def find_bubbles(G, path_d, mermap):
                             log.debug("should NOT collapse {0},{1}".format(n1, n2))
 
 
+def contract_ambiguous_source(G, path_d, mermap):
+    """
+    Special feature for when there are alt. start sites
+    ex:
+       exon 1 --> 5
+       exon 2 --> 5
+    in this case, randomly assign one over the other, ex: 1 --> 2 --> 5 or 2 --> 1 --> 5
+    (note: mermap[1] and mermap[2] may share some suffix, make sure to clear that)
+    """
+    def random_contract(src1, src2):
+        if src1[-1]!=src2[-1]: return src1 + 'N' + src2
+
+        # find common suffix, if any
+        i, len1, len2 = -1, len(src1), len(src2)
+        while i > -min(len1, len2):
+            if src1[i]!=src2[i]:
+                break
+            i -= 1
+        # just make it uniq(src1) + 'N'*(len_of_suffix+1) + uniq(src2) + suffix
+        return src1[:i] + 'N'*(-i) + src2
+
+    # find pairs of sources with exactly one and shared out node
+    sources = [n for n in G.nodes() if G.in_degree(n)==0 and G.out_degree(n)==1]
+    for i,src1 in enumerate(sources):
+        if src1 not in G: continue # removed possibly in an earlier process
+        n2 = list(G.successors(src1))[0]
+        for src2 in sources[i+1:]:
+            if src2 not in G: continue
+            if list(G.successors(src2))[0] == n2:
+                # make src1 the new node, tuck src2 in
+                log.debug("ambiguous contracting source {0} into {1}".format(src2, src1))
+                mermap[src1] = random_contract(mermap[src1], mermap[src2])
+                # replace src2 with src1 in path_d
+                for k in path_d:
+                    if src2 in path_d[k]:
+                        i = path_d[k].index(src2)
+                        path_d[k] = path_d[k][:i] + [src1] + path_d[k][i+1:]
+                G.remove_node(src2)
+                del mermap[src2]
+
+
+
+def contract_ambiguous_sink(G, path_d, mermap):
+    """
+    Special feature for when there are alt. end sites
+    ex:
+       ...n --> sink1
+       ...n --> sink2
+    in this case, randomly assign one over the other, ex: n --> sink1 --> sink2
+    (note: mermap[sink1] and mermap[sink2] may share some prefix, make sure to clear that)
+    """
+    def random_contract(sink1, sink2):
+        if sink1[0]!=sink2[0]: return sink1 + 'N' + sink2
+
+        # find common suffix, if any
+        i, len1, len2 = 0, len(sink1), len(sink2)
+        while i < min(len1, len2):
+            if sink1[i]!=sink2[i]:
+                break
+            i += 1
+        # just make it uniq(src1) + 'N'*(len_of_suffix+1) + uniq(src2) + suffix
+        return sink1 + 'N'*(i) + sink2[i:]
+
+    # find pairs of sinks with exactly and one shared in node
+    sinks = [n for n in G.nodes() if G.in_degree(n)==1 and G.out_degree(n)==0]
+    for i,sink1 in enumerate(sinks):
+        if sink1 not in G: continue # removed possibly in an earlier process
+        n2 = list(G.predecessors(sink1))[0]
+        for sink2 in sinks[i+1:]:
+            if sink2 not in G: continue
+            if list(G.predecessors(sink2))[0] == n2:
+                # make sink1 the new node, tuck sink2 in
+                log.debug("ambiguous contracting sink {0} into {1}".format(sink2, sink1))
+                mermap[sink1] = random_contract(mermap[sink1], mermap[sink2])
+                # replace sink1 with sink2 in path_d
+                for k in path_d:
+                    if sink2 in path_d[k]:
+                        i = path_d[k].index(sink2)
+                        path_d[k] = path_d[k][:i] + [sink1] + path_d[k][i+1:]
+                G.remove_node(sink2)
+                del mermap[sink2]
 
 
 

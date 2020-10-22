@@ -1,6 +1,6 @@
 # Cogent: COding GENome reconstruction Tool
 
-Current version: 7.0.0
+Current version: 8.0.0
 
 Cogent is a tool for reconstructing the coding genome using high-quality full-length transcriptome sequences. It is designed to be used on [Iso-Seq data](https://github.com/PacificBiosciences/cDNA_primer/wiki) and in cases where there is no reference genome or the ref genome is highly incomplete. 
 
@@ -12,6 +12,8 @@ Please see [wiki](https://github.com/Magdoll/Cogent/wiki) for details on usage.
 
 
 ## version updates
+
+2020.10.21 updated to version 8.0.0. Added `--randomly_resolve_ambiguous_dangling` (`-R`) option to `reconstruct_contigs.py`
 
 2020.09.23 updated to version 7.0.0. networkx now on v2.5.
 
