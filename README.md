@@ -1,3 +1,6 @@
+<a href="https://www.pacb.com/hifi-webinar">![](https://github.com/Magdoll/images_public/blob/master/banners/test.png?raw=true)</a>
+
+
 # Cogent: COding GENome reconstruction Tool
 
 Current version: 8.0.0
