@@ -1,4 +1,3 @@
-<a href="https://programs.pacificbiosciences.com/l/1652/2021-03-17/42pbgh">![](https://github.com/Zuhayr-PacBio/images_public/blob/main/PacBio%20BFx%20March%202021%201a.png?raw=true)</a>
 
 # Cogent: COding GENome reconstruction Tool
 
